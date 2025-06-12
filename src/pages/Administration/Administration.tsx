@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { 
-  Settings, 
   Users, 
   Shield, 
   Workflow, 
@@ -10,7 +9,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  MoreHorizontal,
   Save,
   X
 } from 'lucide-react'
