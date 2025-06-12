@@ -786,48 +786,38 @@ export default function CompanyForm() {
 
         {/* Custom Fields */}
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
-              Campos Personalizados
-            </h3>
-            <button
-              type="button"
-              onClick={() => setShowCustomFieldManager(!showCustomFieldManager)}
-              className="btn-secondary text-sm"
-            >
-              <Settings className="h-4 w-4 mr-1" />
-              Gerenciar Campos
-            </button>
-          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Campos Personalizados
+          </h3>
 
           {/* Custom Field Manager */}
-          {showCustomFieldManager && (
-            <div className="mb-6">
-              <CustomFieldManager
-                fields={customFieldDefinitions}
-                onFieldsChange={setCustomFieldDefinitions}
-              />
-            </div>
-          )}
+          <CustomFieldManager
+            fields={customFieldDefinitions}
+            onFieldsChange={setCustomFieldDefinitions}
+            isOpen={showCustomFieldManager}
+            onToggle={() => setShowCustomFieldManager(!showCustomFieldManager)}
+          />
 
           {/* Custom Fields Renderer */}
-          <div className="space-y-4">
-            {customFieldDefinitions.map((field) => (
-              <div key={field.id}>
-                <CustomFieldRenderer
-                  field={field}
-                  value={customFieldValues[field.id]}
-                  onChange={(value) => handleCustomFieldChange(field.id, value)}
-                  error={customFieldErrors[field.id]}
-                />
-              </div>
-            ))}
-            {customFieldDefinitions.length === 0 && (
-              <p className="text-sm text-gray-500 italic">
-                Nenhum campo personalizado configurado. Use o gerenciador para adicionar campos.
-              </p>
-            )}
-          </div>
+          {!showCustomFieldManager && (
+            <div className="space-y-4 mt-4">
+              {customFieldDefinitions.map((field) => (
+                <div key={field.id}>
+                  <CustomFieldRenderer
+                    field={field}
+                    value={customFieldValues[field.id]}
+                    onChange={(value) => handleCustomFieldChange(field.id, value)}
+                    error={customFieldErrors[field.id]}
+                  />
+                </div>
+              ))}
+              {customFieldDefinitions.length === 0 && (
+                <p className="text-sm text-gray-500 italic">
+                  Nenhum campo personalizado configurado. Use o gerenciador para adicionar campos.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Observations */}
