@@ -34,7 +34,7 @@ export async function testSupabaseConnection() {
     
     // Testar acesso ao banco de dados
     try {
-      const { data: testData, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('users')
         .select('count')
         .limit(1)
