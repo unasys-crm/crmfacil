@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { Save, ArrowLeft, Search, Plus, X, Palette, Check, Edit, Trash2, Settings } from 'lucide-react'
 import InputMask from 'react-input-mask'
 import Select from 'react-select'
+import CustomFieldManager, { CustomField } from '../../components/CustomFields/CustomFieldManager'
+import CustomFieldRenderer from '../../components/CustomFields/CustomFieldRenderer'
 
 const companySchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -57,9 +59,47 @@ export default function CompanyForm() {
   const navigate = useNavigate()
   const isEditing = !!id
 
-  const [customFields, setCustomFields] = useState<Array<{ name: string; value: string; type: string }>>([])
-  const [newFieldName, setNewFieldName] = useState('')
-  const [newFieldType, setNewFieldType] = useState('text')
+  // Custom Fields Management
+  const [customFieldDefinitions, setCustomFieldDefinitions] = useState<CustomField[]>([
+    {
+      id: '1',
+      name: 'Área de Atuação',
+      type: 'select',
+      required: false,
+      placeholder: 'Selecione a área principal',
+      options: [
+        { id: '1', label: 'Varejo', value: 'varejo' },
+        { id: '2', label: 'Atacado', value: 'atacado' },
+        { id: '3', label: 'E-commerce', value: 'ecommerce' },
+        { id: '4', label: 'Serviços', value: 'servicos' }
+      ]
+    },
+    {
+      id: '2',
+      name: 'Canais de Venda',
+      type: 'multiselect',
+      required: false,
+      placeholder: 'Selecione os canais utilizados',
+      options: [
+        { id: '1', label: 'Loja Física', value: 'loja_fisica' },
+        { id: '2', label: 'Site Próprio', value: 'site_proprio' },
+        { id: '3', label: 'Marketplace', value: 'marketplace' },
+        { id: '4', label: 'Redes Sociais', value: 'redes_sociais' },
+        { id: '5', label: 'WhatsApp Business', value: 'whatsapp' }
+      ]
+    },
+    {
+      id: '3',
+      name: 'Possui Sistema ERP',
+      type: 'checkbox',
+      required: false,
+      placeholder: 'Empresa possui sistema de gestão integrado'
+    }
+  ])
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({})
+  const [customFieldErrors, setCustomFieldErrors] = useState<Record<string, string>>({})
+  const [showCustomFieldManager, setShowCustomFieldManager] = useState(false)
+  
   const [tags, setTags] = useState<Array<{ name: string; color: string }>>([])
   const [newTag, setNewTag] = useState('')
   const [selectedColor, setSelectedColor] = useState('#3b82f6')
@@ -165,19 +205,35 @@ export default function CompanyForm() {
     }
   }
 
-  const addCustomField = () => {
-    if (newFieldName.trim()) {
-      setCustomFields([...customFields, {
-        name: newFieldName,
-        value: '',
-        type: newFieldType
-      }])
-      setNewFieldName('')
+  const handleCustomFieldChange = (fieldId: string, value: any) => {
+    setCustomFieldValues(prev => ({
+      ...prev,
+      [fieldId]: value
+    }))
+    
+    // Clear error when user starts typing
+    if (customFieldErrors[fieldId]) {
+      setCustomFieldErrors(prev => ({
+        ...prev,
+        [fieldId]: ''
+      }))
     }
   }
 
-  const removeCustomField = (index: number) => {
-    setCustomFields(customFields.filter((_, i) => i !== index))
+  const validateCustomFields = () => {
+    const errors: Record<string, string> = {}
+    
+    customFieldDefinitions.forEach(field => {
+      if (field.required) {
+        const value = customFieldValues[field.id]
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          errors[field.id] = `${field.name} é obrigatório`
+        }
+      }
+    })
+    
+    setCustomFieldErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const addTag = () => {
@@ -232,8 +288,17 @@ export default function CompanyForm() {
 
   const onSubmit = async (data: CompanyFormData) => {
     try {
+      // Validate custom fields
+      if (!validateCustomFields()) {
+        return
+      }
+      
       // Here you would save to your database
-      console.log('Saving company:', { ...data, customFields })
+      console.log('Saving company:', { 
+        ...data, 
+        customFields: customFieldValues,
+        customFieldDefinitions 
+      })
       navigate('/companies')
     } catch (error) {
       console.error('Error saving company:', error)
@@ -749,92 +814,33 @@ export default function CompanyForm() {
         </div>
 
         {/* Custom Fields */}
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Campos Personalizados
-          </h3>
-          <div className="space-y-4">
-            {customFields.map((field, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <div className="flex-1">
-                  <label className="form-label">{field.name}</label>
-                  {field.type === 'text' && (
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={field.value}
-                      onChange={(e) => {
-                        const updated = [...customFields]
-                        updated[index].value = e.target.value
-                        setCustomFields(updated)
-                      }}
-                    />
-                  )}
-                  {field.type === 'textarea' && (
-                    <textarea
-                      className="form-input"
-                      rows={3}
-                      value={field.value}
-                      onChange={(e) => {
-                        const updated = [...customFields]
-                        updated[index].value = e.target.value
-                        setCustomFields(updated)
-                      }}
-                    />
-                  )}
-                  {field.type === 'number' && (
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={field.value}
-                      onChange={(e) => {
-                        const updated = [...customFields]
-                        updated[index].value = e.target.value
-                        setCustomFields(updated)
-                      }}
-                    />
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeCustomField(index)}
-                  className="p-2 text-red-600 hover:text-red-800"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+        <CustomFieldManager
+          fields={customFieldDefinitions}
+          onFieldsChange={setCustomFieldDefinitions}
+          isOpen={showCustomFieldManager}
+          onToggle={() => setShowCustomFieldManager(!showCustomFieldManager)}
+        />
 
-            <div className="border-t pt-4">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newFieldName}
-                  onChange={(e) => setNewFieldName(e.target.value)}
-                  className="form-input flex-1"
-                  placeholder="Nome do campo"
-                />
-                <select
-                  value={newFieldType}
-                  onChange={(e) => setNewFieldType(e.target.value)}
-                  className="form-input w-32"
-                >
-                  <option value="text">Texto</option>
-                  <option value="textarea">Texto Longo</option>
-                  <option value="number">Número</option>
-                  <option value="date">Data</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={addCustomField}
-                  className="btn-secondary"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
+        {/* Render Custom Fields */}
+        {!showCustomFieldManager && customFieldDefinitions.length > 0 && (
+          <div className="card">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Informações Adicionais
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {customFieldDefinitions.map((field) => (
+                <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                  <CustomFieldRenderer
+                    field={field}
+                    value={customFieldValues[field.id]}
+                    onChange={(value) => handleCustomFieldChange(field.id, value)}
+                    error={customFieldErrors[field.id]}
+                  />
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Observations */}
         <div className="card">
