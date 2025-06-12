@@ -9,8 +9,8 @@ Para que o sistema funcione corretamente, você precisa configurar as variáveis
 Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
 
 ```env
-VITE_SUPABASE_URL=sua_url_do_supabase
-VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+VITE_SUPABASE_URL=https://owvnrfppxblaeuldmhdi.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dm5yZnBweGJsYWV1bGRtaGRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MzIwNzAsImV4cCI6MjA2NTMwODA3MH0.ZRlWwDTAbKI2HOVrgHyPGrpPFbECrrDze1ciWeDKy_o
 ```
 
 ### 2. Obter as credenciais do Supabase
