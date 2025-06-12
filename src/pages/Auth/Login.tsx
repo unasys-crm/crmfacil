@@ -19,14 +19,15 @@ export default function Login() {
 
   const handleTestConnection = async () => {
     console.log('🔧 Testando conexão manual...')
+    setError('')
+    setSuccess('')
+    
     const result = await testSupabaseConnection()
     
     if (result.success) {
-      setSuccess('✅ Conexão com Supabase funcionando corretamente!')
-      setError('')
+      setSuccess(`✅ Conexão com Supabase funcionando corretamente!\n🌐 URL: ${result.url}\n👤 Sessão: ${result.hasSession ? 'Ativo' : 'Nenhum usuário logado'}`)
     } else {
-      setError(`❌ Erro na conexão: ${result.error}`)
-      setSuccess('')
+      setError(`❌ Erro na conexão com Supabase:\n\n${result.error}`)
     }
   }
   const handleSubmit = async (e: React.FormEvent) => {

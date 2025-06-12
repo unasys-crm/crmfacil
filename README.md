@@ -1,5 +1,30 @@
 # crmfacil
 
+## ⚠️ Problemas de Conexão?
+
+Se você está vendo erros como "Failed to fetch" ou problemas de conectividade:
+
+### 1. Verificar Configuração
+```bash
+# Verifique se o arquivo .env existe na raiz do projeto
+ls -la .env
+
+# Conteúdo esperado:
+VITE_SUPABASE_URL=https://owvnrfppxblaeuldmhdi.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### 2. Testar Conectividade
+- Use o botão "🔧 Testar Conexão com Supabase" na tela de login
+- Abra o console do navegador (F12) para ver logs detalhados
+- Verifique se consegue acessar https://owvnrfppxblaeuldmhdi.supabase.co diretamente
+
+### 3. Problemas Comuns
+- **Firewall/Proxy**: Alguns firewalls corporativos bloqueiam Supabase
+- **URL incorreta**: Verifique se a URL não tem espaços ou caracteres extras
+- **Chave inválida**: Confirme a ANON_KEY no painel do Supabase
+- **Projeto pausado**: Projetos Supabase gratuitos podem ser pausados por inatividade
+
 ## Configuração do Supabase
 
 Para que o sistema funcione corretamente, você precisa configurar as variáveis de ambiente do Supabase:
