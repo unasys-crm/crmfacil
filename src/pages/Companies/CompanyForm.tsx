@@ -127,7 +127,6 @@ export default function CompanyForm() {
     '#8b5cf6', '#06b6d4', '#84cc16', '#f97316',
     '#6b7280', '#ec4899', '#14b8a6', '#f43f5e'
   ]
-  const [cnpjData, setCnpjData] = useState<any>(null)
 
   const {
     register,
@@ -194,7 +193,6 @@ export default function CompanyForm() {
           email: 'contato@exemplo.com'
         }
         
-        setCnpjData(mockData)
         setValue('razao_social', mockData.razao_social)
         setValue('name', mockData.nome_fantasia)
         setValue('address', mockData.endereco)
@@ -790,76 +788,4 @@ export default function CompanyForm() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">
-              Campos Personalizados
-            </h3>
-            <button
-              type="button"
-              onClick={() => setShowCustomFieldManager(!showCustomFieldManager)}
-              className="btn-secondary text-sm"
-            >
-              <Settings className="h-4 w-4 mr-1" />
-              Gerenciar Campos
-            </button>
-          </div>
-
-          {showCustomFieldManager && (
-            <div className="mb-6">
-              <CustomFieldManager
-                fields={customFieldDefinitions}
-                onFieldsChange={setCustomFieldDefinitions}
-              />
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {customFieldDefinitions.map((field) => (
-              <div key={field.id}>
-                <CustomFieldRenderer
-                  field={field}
-                  value={customFieldValues[field.id]}
-                  onChange={(value) => handleCustomFieldChange(field.id, value)}
-                  error={customFieldErrors[field.id]}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Observations */}
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Observações
-          </h3>
-          <div>
-            <label className="form-label">Observações Gerais</label>
-            <textarea
-              {...register('observations')}
-              rows={4}
-              className="form-input"
-              placeholder="Informações adicionais sobre a empresa..."
-            />
-          </div>
-        </div>
-
-        {/* Form Actions */}
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => navigate('/companies')}
-            className="btn-secondary"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="btn-primary"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? 'Salvando...' : 'Salvar Empresa'}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
+              Campos Person

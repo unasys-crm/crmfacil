@@ -2,8 +2,6 @@ import {
   Users, 
   Building2, 
   Target, 
-  TrendingUp,
-  Calendar,
   DollarSign,
   Activity,
   Clock
