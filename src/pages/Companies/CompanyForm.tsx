@@ -8,6 +8,7 @@ import InputMask from 'react-input-mask'
 import Select from 'react-select'
 import CustomFieldManager, { CustomField } from '../../components/CustomFields/CustomFieldManager'
 import CustomFieldRenderer from '../../components/CustomFields/CustomFieldRenderer'
+import ClientSelector from '../../components/ClientSelector/ClientSelector'
 
 const companySchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -25,6 +26,7 @@ const companySchema = z.object({
   responsible_ids: z.array(z.string()).optional(),
   observations: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  associated_clients: z.array(z.any()).optional(),
 })
 
 type CompanyFormData = z.infer<typeof companySchema>
@@ -118,6 +120,7 @@ export default function CompanyForm() {
   const [editingTag, setEditingTag] = useState<{ index: number; name: string; color: string } | null>(null)
   const [newAvailableTag, setNewAvailableTag] = useState('')
   const [newAvailableTagColor, setNewAvailableTagColor] = useState('#3b82f6')
+  const [associatedClients, setAssociatedClients] = useState<any[]>([])
 
   const predefinedColors = [
     '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
@@ -150,6 +153,7 @@ export default function CompanyForm() {
       observations: '',
       tags: [],
       responsible_ids: [],
+      associated_clients: [],
     },
   })
 
@@ -296,6 +300,7 @@ export default function CompanyForm() {
       // Here you would save to your database
       console.log('Saving company:', { 
         ...data, 
+        associated_clients: associatedClients,
         customFields: customFieldValues,
         customFieldDefinitions 
       })
@@ -512,6 +517,17 @@ export default function CompanyForm() {
               classNamePrefix="react-select"
             />
           </div>
+        </div>
+
+        {/* Associated Clients */}
+        <div className="card">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Contatos da Empresa
+          </h3>
+          <ClientSelector
+            selectedClients={associatedClients}
+            onClientsChange={setAssociatedClients}
+          />
         </div>
 
         {/* Tags */}
