@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { Eye, EyeOff, AlertCircle, UserPlus } from 'lucide-react'
 import LoadingSpinner from '../../components/UI/LoadingSpinner'
+import { testSupabaseConnection } from '../../utils/supabaseTest'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -16,6 +17,18 @@ export default function Login() {
   const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
 
+  const handleTestConnection = async () => {
+    console.log('🔧 Testando conexão manual...')
+    const result = await testSupabaseConnection()
+    
+    if (result.success) {
+      setSuccess('✅ Conexão com Supabase funcionando corretamente!')
+      setError('')
+    } else {
+      setError(`❌ Erro na conexão: ${result.error}`)
+      setSuccess('')
+    }
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -212,6 +225,19 @@ export default function Login() {
             <p className="text-xs text-gray-500">
               Se o usuário demo não existir, clique em "Criar Usuário Demo" primeiro
             </p>
+            
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                className="w-full text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded transition-colors"
+              >
+                🔧 Testar Conexão com Supabase
+              </button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Use este botão para verificar se o Supabase está configurado corretamente
+              </p>
+            </div>
           </div>
         </form>
       </div>

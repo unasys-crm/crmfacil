@@ -5,12 +5,32 @@ import {
   DollarSign,
   Clock
 } from 'lucide-react'
+import { useEffect } from 'react'
 import StatsCard from './StatsCard'
 import RecentActivity from './RecentActivity'
 import SalesChart from './SalesChart'
 import DealsOverview from './DealsOverview'
+import { testSupabaseConnection, checkMigrations } from '../../utils/supabaseTest'
 
 export default function Dashboard() {
+  useEffect(() => {
+    // Testar conexão com Supabase quando o dashboard carregar
+    const runTests = async () => {
+      console.log('🚀 Iniciando testes de conectividade...')
+      
+      const connectionResult = await testSupabaseConnection()
+      const migrationResults = await checkMigrations()
+      
+      if (connectionResult.success) {
+        console.log('✅ Ambiente Supabase configurado corretamente!')
+      } else {
+        console.error('❌ Problemas na configuração do Supabase:', connectionResult.error)
+      }
+    }
+    
+    runTests()
+  }, [])
+
   const stats = [
     {
       name: 'Total de Clientes',
