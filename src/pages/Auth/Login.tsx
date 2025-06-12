@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, UserPlus } from 'lucide-react'
 import LoadingSpinner from '../../components/UI/LoadingSpinner'
 
 export default function Login() {
@@ -9,15 +9,18 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [creatingDemo, setCreatingDemo] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   
-  const { signIn } = useAuth()
+  const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
 
     try {
       await signIn(email, password)
@@ -25,7 +28,11 @@ export default function Login() {
     } catch (err: any) {
       // Provide more specific error messages
       if (err.message?.includes('Invalid login credentials')) {
-        setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.')
+        if (email === 'admin@crmfacil.com') {
+          setError('Usuário demo não encontrado. Clique em "Criar Usuário Demo" para criá-lo automaticamente.')
+        } else {
+          setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.')
+        }
       } else if (err.message?.includes('Email not confirmed')) {
         setError('Email não confirmado. Verifique sua caixa de entrada.')
       } else if (err.message?.includes('Too many requests')) {
@@ -41,6 +48,29 @@ export default function Login() {
   const handleDemoLogin = () => {
     setEmail('admin@crmfacil.com')
     setPassword('123456')
+  }
+
+  const handleCreateDemoUser = async () => {
+    setCreatingDemo(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      await signUp('admin@crmfacil.com', '123456')
+      setSuccess('Usuário demo criado com sucesso! Agora você pode fazer login.')
+      setEmail('admin@crmfacil.com')
+      setPassword('123456')
+    } catch (err: any) {
+      if (err.message?.includes('User already registered')) {
+        setSuccess('Usuário demo já existe! Você pode fazer login normalmente.')
+        setEmail('admin@crmfacil.com')
+        setPassword('123456')
+      } else {
+        setError(err.message || 'Erro ao criar usuário demo')
+      }
+    } finally {
+      setCreatingDemo(false)
+    }
   }
 
   return (
@@ -63,6 +93,15 @@ export default function Login() {
             <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-center">
               <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
               <span className="text-sm text-red-700">{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4 flex items-center">
+              <div className="h-5 w-5 text-green-400 mr-2 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-xs">✓</span>
+              </div>
+              <span className="text-sm text-green-700">{success}</span>
             </div>
           )}
           
@@ -129,27 +168,45 @@ export default function Login() {
             </button>
           </div>
 
-          <div className="text-center space-y-2">
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-              <p className="text-sm text-blue-800 font-medium mb-2">
+          <div className="text-center space-y-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <p className="text-sm text-blue-800 font-medium mb-3">
                 Credenciais de demonstração:
               </p>
               <p className="text-sm text-blue-700">
                 Email: <strong>admin@crmfacil.com</strong>
               </p>
-              <p className="text-sm text-blue-700 mb-2">
+              <p className="text-sm text-blue-700 mb-3">
                 Senha: <strong>123456</strong>
               </p>
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded transition-colors"
-              >
-                Preencher automaticamente
-              </button>
+              
+              <div className="flex flex-col space-y-2">
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-2 rounded transition-colors"
+                >
+                  Preencher automaticamente
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleCreateDemoUser}
+                  disabled={creatingDemo}
+                  className="flex items-center justify-center text-xs bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded transition-colors disabled:opacity-50"
+                >
+                  {creatingDemo ? (
+                    <LoadingSpinner size="xs" className="text-green-800 mr-1" />
+                  ) : (
+                    <UserPlus className="h-3 w-3 mr-1" />
+                  )}
+                  Criar Usuário Demo
+                </button>
+              </div>
             </div>
+            
             <p className="text-xs text-gray-500">
-              Nota: O usuário demo deve ser criado no painel do Supabase
+              Se o usuário demo não existir, clique em "Criar Usuário Demo" primeiro
             </p>
           </div>
         </form>
