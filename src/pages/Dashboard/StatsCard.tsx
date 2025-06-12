@@ -1,4 +1,4 @@
-import { DivideIcon, TrendingUp, TrendingDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, type LucideIcon } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface StatsCardProps {
@@ -6,7 +6,7 @@ interface StatsCardProps {
   value: string
   change: string
   changeType: 'increase' | 'decrease'
-  icon: typeof DivideIcon
+  icon: LucideIcon
 }
 
 export default function StatsCard({ name, value, change, changeType, icon: Icon }: StatsCardProps) {
