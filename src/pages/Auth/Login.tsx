@@ -33,8 +33,12 @@ export default function Login() {
         } else {
           setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.')
         }
-      } else if (err.message?.includes('Email not confirmed')) {
-        setError('Email não confirmado. Verifique sua caixa de entrada.')
+      } else if (err.message?.includes('Email not confirmed') || err.message?.includes('email_not_confirmed')) {
+        if (email === 'admin@crmfacil.com') {
+          setError('Para usar o usuário demo, você precisa desabilitar a confirmação de email no Supabase. Vá em Authentication > Settings > Email Confirmation e desmarque "Enable email confirmations".')
+        } else {
+          setError('Email não confirmado. Verifique sua caixa de entrada ou desabilite a confirmação de email nas configurações do Supabase.')
+        }
       } else if (err.message?.includes('Too many requests')) {
         setError('Muitas tentativas de login. Tente novamente em alguns minutos.')
       } else {
@@ -90,8 +94,8 @@ export default function Login() {
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" />
               <span className="text-sm text-red-700">{error}</span>
             </div>
           )}
