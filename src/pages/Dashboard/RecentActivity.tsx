@@ -1,6 +1,5 @@
 import { 
   User, 
-  Building2, 
   Target, 
   FileText, 
   Calendar,

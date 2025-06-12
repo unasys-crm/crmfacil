@@ -3,7 +3,6 @@ import {
   Building2, 
   Target, 
   DollarSign,
-  Activity,
   Clock
 } from 'lucide-react'
 import StatsCard from './StatsCard'

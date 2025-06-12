@@ -9,8 +9,6 @@ const data = [
 ]
 
 export default function DealsOverview() {
-  const total = data.reduce((sum, item) => sum + item.value, 0)
-
   return (
     <div className="card">
       <h3 className="text-lg font-medium text-gray-900 mb-4">
