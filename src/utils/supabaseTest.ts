@@ -76,13 +76,13 @@ export async function checkMigrations() {
     
     for (const table of tables) {
       try {
-        const { error } = await supabase
+        const { error: dbError } = await supabase
           .from(table)
           .select('count')
           .limit(1)
         
-        if (error) {
-          results.push({ table, status: 'error', message: error.message })
+        if (dbError) {
+          results.push({ table, status: 'error', message: dbError.message })
         } else {
           results.push({ table, status: 'ok', message: 'Tabela acessível' })
         }
