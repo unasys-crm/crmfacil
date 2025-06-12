@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Save, ArrowLeft, Search, Plus, X, Palette, Check } from 'lucide-react'
+import { Save, ArrowLeft, Search, Plus, X, Palette, Check, Edit, Trash2, Settings } from 'lucide-react'
 import InputMask from 'react-input-mask'
 import Select from 'react-select'
 
@@ -64,7 +64,8 @@ export default function CompanyForm() {
   const [newTag, setNewTag] = useState('')
   const [selectedColor, setSelectedColor] = useState('#3b82f6')
   const [showColorPicker, setShowColorPicker] = useState(false)
-  const [availableTags] = useState([
+  const [showTagManager, setShowTagManager] = useState(false)
+  const [availableTags, setAvailableTags] = useState([
     { name: 'Cliente Premium', color: '#10b981' },
     { name: 'Prospect', color: '#f59e0b' },
     { name: 'Ativo', color: '#3b82f6' },
@@ -74,6 +75,9 @@ export default function CompanyForm() {
     { name: 'Renovação', color: '#84cc16' },
     { name: 'Urgente', color: '#f97316' },
   ])
+  const [editingTag, setEditingTag] = useState<{ index: number; name: string; color: string } | null>(null)
+  const [newAvailableTag, setNewAvailableTag] = useState('')
+  const [newAvailableTagColor, setNewAvailableTagColor] = useState('#3b82f6')
 
   const predefinedColors = [
     '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
@@ -195,6 +199,32 @@ export default function CompanyForm() {
   }
 
   const removeTag = (tagToRemove: { name: string; color: string }) => {
+    const updatedTags = tags.filter(tag => tag.name !== tagToRemove.name)
+    setTags(updatedTags)
+    setValue('tags', updatedTags.map(tag => tag.name))
+  }
+
+  const addAvailableTag = () => {
+    if (newAvailableTag.trim() && !availableTags.some(tag => tag.name === newAvailableTag.trim())) {
+      setAvailableTags([...availableTags, { name: newAvailableTag.trim(), color: newAvailableTagColor }])
+      setNewAvailableTag('')
+      setNewAvailableTagColor('#3b82f6')
+    }
+  }
+
+  const updateAvailableTag = (index: number, name: string, color: string) => {
+    if (name.trim() && !availableTags.some((tag, i) => i !== index && tag.name === name.trim())) {
+      const updated = [...availableTags]
+      updated[index] = { name: name.trim(), color }
+      setAvailableTags(updated)
+      setEditingTag(null)
+    }
+  }
+
+  const removeAvailableTag = (index: number) => {
+    const tagToRemove = availableTags[index]
+    setAvailableTags(availableTags.filter((_, i) => i !== index))
+    // Remove from selected tags if it was selected
     const updatedTags = tags.filter(tag => tag.name !== tagToRemove.name)
     setTags(updatedTags)
     setValue('tags', updatedTags.map(tag => tag.name))
@@ -421,9 +451,122 @@ export default function CompanyForm() {
 
         {/* Tags */}
         <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Marcadores
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              Marcadores
+            </h3>
+            <button
+              type="button"
+              onClick={() => setShowTagManager(!showTagManager)}
+              className="btn-secondary text-sm"
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              Gerenciar Marcadores
+            </button>
+          </div>
+
+          {/* Tag Manager */}
+          {showTagManager && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+              <h4 className="text-md font-medium text-gray-900 mb-3">
+                Gerenciar Marcadores Disponíveis
+              </h4>
+              
+              {/* Available Tags List */}
+              <div className="space-y-2 mb-4">
+                {availableTags.map((tag, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                    {editingTag?.index === index ? (
+                      <div className="flex items-center space-x-2 flex-1">
+                        <input
+                          type="text"
+                          value={editingTag.name}
+                          onChange={(e) => setEditingTag({ ...editingTag, name: e.target.value })}
+                          className="form-input flex-1 text-sm"
+                          placeholder="Nome do marcador"
+                        />
+                        <input
+                          type="color"
+                          value={editingTag.color}
+                          onChange={(e) => setEditingTag({ ...editingTag, color: e.target.value })}
+                          className="w-8 h-8 rounded border border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => updateAvailableTag(index, editingTag.name, editingTag.color)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingTag(null)}
+                          className="text-gray-600 hover:text-gray-800"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center space-x-2">
+                          <div 
+                            className="w-4 h-4 rounded-full border border-gray-300"
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          <span className="text-sm font-medium text-gray-900">{tag.name}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditingTag({ index, name: tag.name, color: tag.color })}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeAvailableTag(index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Add New Available Tag */}
+              <div className="border-t pt-3">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={newAvailableTag}
+                    onChange={(e) => setNewAvailableTag(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAvailableTag())}
+                    className="form-input flex-1 text-sm"
+                    placeholder="Nome do novo marcador"
+                  />
+                  <input
+                    type="color"
+                    value={newAvailableTagColor}
+                    onChange={(e) => setNewAvailableTagColor(e.target.value)}
+                    className="w-8 h-8 rounded border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={addAvailableTag}
+                    disabled={!newAvailableTag.trim()}
+                    className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {/* Available Tags */}
             <div>
@@ -454,6 +597,11 @@ export default function CompanyForm() {
                     {tag.name}
                   </button>
                 ))}
+                {availableTags.length === 0 && (
+                  <p className="text-sm text-gray-500 italic">
+                    Nenhum marcador disponível. Use o gerenciador para adicionar marcadores.
+                  </p>
+                )}
               </div>
             </div>
 
