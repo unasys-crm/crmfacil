@@ -3,8 +3,7 @@ import {
   Target, 
   FileText, 
   Calendar,
-  Phone,
-  Mail
+  Phone
 } from 'lucide-react'
 import { formatDateTime } from '../../lib/utils'
 

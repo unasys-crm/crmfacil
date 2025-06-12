@@ -22,6 +22,7 @@ interface CustomFieldManagerProps {
   onFieldsChange: (fields: CustomField[]) => void
   isOpen: boolean
   onToggle: () => void
+  onClose?: () => void
 }
 
 export default function CustomFieldManager({ fields, onFieldsChange, isOpen, onToggle }: CustomFieldManagerProps) {
