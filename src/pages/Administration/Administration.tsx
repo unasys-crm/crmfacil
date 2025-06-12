@@ -8,9 +8,7 @@ import {
   Link,
   Plus,
   Edit,
-  Trash2,
-  Save,
-  X
+  Trash2
 } from 'lucide-react'
 
 export default function Administration() {

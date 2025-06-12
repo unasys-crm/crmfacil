@@ -200,7 +200,7 @@ export default function Login() {
                   className="flex items-center justify-center text-xs bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded transition-colors disabled:opacity-50"
                 >
                   {creatingDemo ? (
-                    <LoadingSpinner size="xs" className="text-green-800 mr-1" />
+                    <LoadingSpinner size="sm" className="text-green-800 mr-1" />
                   ) : (
                     <UserPlus className="h-3 w-3 mr-1" />
                   )}
