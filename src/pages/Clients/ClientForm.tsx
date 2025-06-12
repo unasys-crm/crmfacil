@@ -9,7 +9,10 @@ import Select from 'react-select'
 
 const clientSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
+  client_type: z.enum(['person', 'company'], { required_error: 'Tipo de cliente é obrigatório' }),
   cpf: z.string().optional(),
+  cnpj: z.string().optional(),
+  razao_social: z.string().optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
   cep: z.string().optional(),
@@ -57,7 +60,10 @@ export default function ClientForm() {
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: '',
+      client_type: 'person',
       cpf: '',
+      cnpj: '',
+      razao_social: '',
       email: '',
       phone: '',
       cep: '',
@@ -71,6 +77,8 @@ export default function ClientForm() {
   })
 
   const watchedCep = watch('cep')
+  const watchedClientType = watch('client_type')
+  const watchedCnpj = watch('cnpj')
 
   // CEP lookup function
   const handleCepLookup = async () => {
@@ -86,6 +94,36 @@ export default function ClientForm() {
         }
       } catch (error) {
         console.error('Erro ao buscar CEP:', error)
+      }
+    }
+  }
+
+  // CNPJ lookup function
+  const handleCnpjLookup = async () => {
+    if (watchedCnpj && watchedCnpj.length === 18) {
+      try {
+        // Mock CNPJ data - in real app would call API Brasil
+        const mockData = {
+          razao_social: 'Empresa Cliente Ltda',
+          nome_fantasia: 'Cliente Empresa',
+          endereco: 'Rua Comercial, 456',
+          cidade: 'São Paulo',
+          uf: 'SP',
+          cep: '01234-567',
+          telefone: '(11) 1234-5678',
+          email: 'contato@clienteempresa.com'
+        }
+        
+        setValue('razao_social', mockData.razao_social)
+        setValue('name', mockData.nome_fantasia)
+        setValue('address', mockData.endereco)
+        setValue('city', mockData.cidade)
+        setValue('state', mockData.uf)
+        setValue('cep', mockData.cep)
+        setValue('phone', mockData.telefone)
+        setValue('email', mockData.email)
+      } catch (error) {
+        console.error('Erro ao buscar CNPJ:', error)
       }
     }
   }
@@ -157,50 +195,115 @@ export default function ClientForm() {
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Informações Básicas
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            {/* Client Type Selection */}
             <div>
-              <label className="form-label">Nome *</label>
-              <input
-                {...register('name')}
-                className="form-input"
-                placeholder="Nome completo"
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              <label className="form-label">Tipo de Cliente *</label>
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    {...register('client_type')}
+                    value="person"
+                    className="mr-2 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700">Pessoa Física</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    {...register('client_type')}
+                    value="company"
+                    className="mr-2 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700">Pessoa Jurídica</span>
+                </label>
+              </div>
+              {errors.client_type && (
+                <p className="mt-1 text-sm text-red-600">{errors.client_type.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="form-label">CPF</label>
-              <InputMask
-                mask="999.999.999-99"
-                {...register('cpf')}
-                className="form-input"
-                placeholder="000.000.000-00"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="form-label">
+                  {watchedClientType === 'company' ? 'Nome Fantasia *' : 'Nome Completo *'}
+                </label>
+                <input
+                  {...register('name')}
+                  className="form-input"
+                  placeholder={watchedClientType === 'company' ? 'Nome fantasia da empresa' : 'Nome completo'}
+                />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                )}
+              </div>
 
-            <div>
-              <label className="form-label">Email</label>
-              <input
-                {...register('email')}
-                type="email"
-                className="form-input"
-                placeholder="email@exemplo.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              {watchedClientType === 'company' && (
+                <div>
+                  <label className="form-label">Razão Social</label>
+                  <input
+                    {...register('razao_social')}
+                    className="form-input"
+                    placeholder="Razão social completa"
+                  />
+                </div>
               )}
-            </div>
 
-            <div>
-              <label className="form-label">Telefone</label>
-              <InputMask
-                mask="(99) 99999-9999"
-                {...register('phone')}
-                className="form-input"
-                placeholder="(00) 00000-0000"
-              />
+              {watchedClientType === 'person' ? (
+                <div>
+                  <label className="form-label">CPF</label>
+                  <InputMask
+                    mask="999.999.999-99"
+                    {...register('cpf')}
+                    className="form-input"
+                    placeholder="000.000.000-00"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="form-label">CNPJ</label>
+                  <div className="flex">
+                    <InputMask
+                      mask="99.999.999/9999-99"
+                      {...register('cnpj')}
+                      className="form-input rounded-r-none"
+                      placeholder="00.000.000/0000-00"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCnpjLookup}
+                      className="px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 hover:bg-gray-100"
+                      title="Consultar CNPJ"
+                    >
+                      <Search className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="form-label">Email</label>
+                <input
+                  {...register('email')}
+                  type="email"
+                  className="form-input"
+                  placeholder="email@exemplo.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="form-label">Telefone</label>
+                <InputMask
+                  mask="(99) 99999-9999"
+                  {...register('phone')}
+                  className="form-input"
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -260,7 +363,8 @@ export default function ClientForm() {
           </div>
         </div>
 
-        {/* Company and Responsible */}
+        {/* Company and Responsible - Only show for person type */}
+        {watchedClientType === 'person' && (
         <div className="card">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Empresa e Responsáveis
@@ -289,6 +393,26 @@ export default function ClientForm() {
             </div>
           </div>
         </div>
+        )}
+
+        {/* Responsible - Show for company type */}
+        {watchedClientType === 'company' && (
+        <div className="card">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Responsáveis
+          </h3>
+          <div>
+            <label className="form-label">Responsáveis</label>
+            <Select
+              options={salespeople}
+              placeholder="Selecione os responsáveis"
+              isMulti
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+          </div>
+        </div>
+        )}
 
         {/* Tags */}
         <div className="card">
@@ -418,7 +542,7 @@ export default function ClientForm() {
             {...register('observations')}
             rows={4}
             className="form-input"
-            placeholder="Observações sobre o cliente..."
+            placeholder={`Observações sobre ${watchedClientType === 'company' ? 'a empresa' : 'o cliente'}...`}
           />
         </div>
 
