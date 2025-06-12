@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Save, ArrowLeft, Search, Plus, X } from 'lucide-react'
+import { Save, ArrowLeft, Search, Plus, X, Palette, Check } from 'lucide-react'
 import InputMask from 'react-input-mask'
 import Select from 'react-select'
 
@@ -60,8 +60,26 @@ export default function CompanyForm() {
   const [customFields, setCustomFields] = useState<Array<{ name: string; value: string; type: string }>>([])
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldType, setNewFieldType] = useState('text')
-  const [tags, setTags] = useState<string[]>([])
+  const [tags, setTags] = useState<Array<{ name: string; color: string }>>([])
   const [newTag, setNewTag] = useState('')
+  const [selectedColor, setSelectedColor] = useState('#3b82f6')
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [availableTags] = useState([
+    { name: 'Cliente Premium', color: '#10b981' },
+    { name: 'Prospect', color: '#f59e0b' },
+    { name: 'Ativo', color: '#3b82f6' },
+    { name: 'Inativo', color: '#ef4444' },
+    { name: 'VIP', color: '#8b5cf6' },
+    { name: 'Novo Cliente', color: '#06b6d4' },
+    { name: 'Renovação', color: '#84cc16' },
+    { name: 'Urgente', color: '#f97316' },
+  ])
+
+  const predefinedColors = [
+    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+    '#8b5cf6', '#06b6d4', '#84cc16', '#f97316',
+    '#6b7280', '#ec4899', '#14b8a6', '#f43f5e'
+  ]
   const [cnpjData, setCnpjData] = useState<any>(null)
 
   const {
@@ -159,18 +177,27 @@ export default function CompanyForm() {
   }
 
   const addTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      const updatedTags = [...tags, newTag.trim()]
+    if (newTag.trim() && !tags.some(tag => tag.name === newTag.trim())) {
+      const updatedTags = [...tags, { name: newTag.trim(), color: selectedColor }]
       setTags(updatedTags)
-      setValue('tags', updatedTags)
+      setValue('tags', updatedTags.map(tag => tag.name))
       setNewTag('')
+      setShowColorPicker(false)
     }
   }
 
-  const removeTag = (tagToRemove: string) => {
-    const updatedTags = tags.filter(tag => tag !== tagToRemove)
+  const addExistingTag = (tagToAdd: { name: string; color: string }) => {
+    if (!tags.some(tag => tag.name === tagToAdd.name)) {
+      const updatedTags = [...tags, tagToAdd]
+      setTags(updatedTags)
+      setValue('tags', updatedTags.map(tag => tag.name))
+    }
+  }
+
+  const removeTag = (tagToRemove: { name: string; color: string }) => {
+    const updatedTags = tags.filter(tag => tag.name !== tagToRemove.name)
     setTags(updatedTags)
-    setValue('tags', updatedTags)
+    setValue('tags', updatedTags.map(tag => tag.name))
   }
 
   const onSubmit = async (data: CompanyFormData) => {
@@ -398,13 +425,151 @@ export default function CompanyForm() {
             Marcadores
           </h3>
           <div className="space-y-4">
+            {/* Available Tags */}
+            <div>
+              <label className="form-label">Marcadores Disponíveis</label>
+              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-md">
+                {availableTags.map((tag) => (
+                  <button
+                    key={tag.name}
+                    type="button"
+                    onClick={() => addExistingTag(tag)}
+                    disabled={tags.some(t => t.name === tag.name)}
+                    className={`
+                      inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all
+                      ${tags.some(t => t.name === tag.name)
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:scale-105 cursor-pointer'
+                      }
+                    `}
+                    style={{
+                      backgroundColor: `${tag.color}20`,
+                      color: tag.color,
+                      border: `1px solid ${tag.color}40`
+                    }}
+                  >
+                    {tags.some(t => t.name === tag.name) && (
+                      <Check className="h-3 w-3 mr-1" />
+                    )}
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Selected Tags */}
             <div className="flex flex-wrap gap-2">
               {tags.map((tag) => (
                 <span
-                  key={tag}
+                  key={tag.name}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: `${tag.color}20`,
+                    color: tag.color,
+                    border: `1px solid ${tag.color}40`
+                  }}
+                >
+                  <div 
+                    className="w-2 h-2 rounded-full mr-2"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  {tag.name}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-2 hover:opacity-70"
+                    style={{ color: tag.color }}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+
+            {/* Add New Tag */}
+            <div className="border-t pt-4">
+              <label className="form-label">Criar Novo Marcador</label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                  className="form-input flex-1"
+                  placeholder="Nome do marcador"
+                />
+                
+                {/* Color Picker */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                    className="px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <div 
+                      className="w-4 h-4 rounded-full border border-gray-300"
+                      style={{ backgroundColor: selectedColor }}
+                    />
+                    <Palette className="h-4 w-4 text-gray-500" />
+                  </button>
+                  
+                  {showColorPicker && (
+                    <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
+                      <div className="grid grid-cols-4 gap-2">
+                        {predefinedColors.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => {
+                              setSelectedColor(color)
+                              setShowColorPicker(false)
+                            }}
+                            className={`
+                              w-8 h-8 rounded-full border-2 hover:scale-110 transition-transform
+                              ${selectedColor === color ? 'border-gray-800' : 'border-gray-300'}
+                            `}
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <input
+                          type="color"
+                          value={selectedColor}
+                          onChange={(e) => setSelectedColor(e.target.value)}
+                          className="w-full h-8 rounded border border-gray-300"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addTag}
+                  disabled={!newTag.trim()}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tags - Old Simple Version (keeping for reference but hidden) */}
+        <div className="card hidden">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Marcadores (Versão Simples)
+          </h3>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <span
+                  key={tag.name}
                   className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary-100 text-primary-800"
                 >
-                  {tag}
+                  {tag.name}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
