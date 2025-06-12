@@ -23,10 +23,24 @@ export default function Login() {
       await signIn(email, password)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login')
+      // Provide more specific error messages
+      if (err.message?.includes('Invalid login credentials')) {
+        setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.')
+      } else if (err.message?.includes('Email not confirmed')) {
+        setError('Email não confirmado. Verifique sua caixa de entrada.')
+      } else if (err.message?.includes('Too many requests')) {
+        setError('Muitas tentativas de login. Tente novamente em alguns minutos.')
+      } else {
+        setError(err.message || 'Erro ao fazer login')
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDemoLogin = () => {
+    setEmail('admin@crmfacil.com')
+    setPassword('123456')
   }
 
   return (
@@ -115,12 +129,27 @@ export default function Login() {
             </button>
           </div>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Usuário demo: <strong>admin@crmfacil.com</strong>
-            </p>
-            <p className="text-sm text-gray-600">
-              Senha demo: <strong>123456</strong>
+          <div className="text-center space-y-2">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <p className="text-sm text-blue-800 font-medium mb-2">
+                Credenciais de demonstração:
+              </p>
+              <p className="text-sm text-blue-700">
+                Email: <strong>admin@crmfacil.com</strong>
+              </p>
+              <p className="text-sm text-blue-700 mb-2">
+                Senha: <strong>123456</strong>
+              </p>
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded transition-colors"
+              >
+                Preencher automaticamente
+              </button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Nota: O usuário demo deve ser criado no painel do Supabase
             </p>
           </div>
         </form>
