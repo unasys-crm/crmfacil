@@ -1,4 +1,3 @@
-import React from 'react'
 import { Bell, Search, ChevronDown, LogOut } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCompany } from '../../contexts/CompanyContext'

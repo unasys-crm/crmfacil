@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Search, Plus, X, User, Building2, Phone, Mail } from 'lucide-react'
 import Select from 'react-select'
 

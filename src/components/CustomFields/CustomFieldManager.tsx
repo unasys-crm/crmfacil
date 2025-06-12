@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Plus, Edit, Trash2, X, Check, Settings, ChevronDown, ChevronUp } from 'lucide-react'
 
 export interface CustomFieldOption {
