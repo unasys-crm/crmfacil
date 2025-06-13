@@ -35,8 +35,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       // Simulate loading companies for the user
       // In a real app, this would fetch from the database
       const mockCompanies = [
-        { id: '1', name: 'Empresa Demo', domain: 'demo.crmfacil.com' },
-        { id: '2', name: 'Minha Empresa', domain: 'minhaempresa.crmfacil.com' },
+        { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', name: 'Empresa Demo', domain: 'demo.crmfacil.com' },
+        { id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', name: 'Minha Empresa', domain: 'minhaempresa.crmfacil.com' },
       ]
       
       setCompanies(mockCompanies)
