@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Eye, EyeOff, AlertCircle, UserPlus } from 'lucide-react'
 import LoadingSpinner from '../../components/UI/LoadingSpinner'
 import { testSupabaseConnection } from '../../utils/supabaseTest'
+import { supabase } from '../../lib/supabase'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -74,12 +75,64 @@ export default function Login() {
     setSuccess('')
 
     try {
-      await signUp('admin@crmfacil.com', '123456')
+      const user = await signUp('admin@crmfacil.com', '123456')
+      
+      // Create user profile in public.users table
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          id: user.id,
+          email: user.email,
+          name: 'Admin Demo',
+          role: 'admin',
+          tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' // Demo tenant ID
+        })
+
+      if (profileError) {
+        console.error('Error creating user profile:', profileError)
+        // Don't throw here as the auth user was created successfully
+      }
+
       setSuccess('Usuário demo criado com sucesso! Agora você pode fazer login.')
       setEmail('admin@crmfacil.com')
       setPassword('123456')
     } catch (err: any) {
       if (err.message?.includes('User already registered')) {
+        // Check if user profile exists in public.users table
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', 'admin@crmfacil.com')
+          .single()
+
+        if (!existingUser) {
+          // User exists in auth but not in public.users, try to get the auth user
+          const { data: authData } = await supabase.auth.signInWithPassword({
+            email: 'admin@crmfacil.com',
+            password: '123456'
+          })
+
+          if (authData.user) {
+            // Create the missing profile
+            const { error: profileError } = await supabase
+              .from('users')
+              .insert({
+                id: authData.user.id,
+                email: authData.user.email,
+                name: 'Admin Demo',
+                role: 'admin',
+                tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+              })
+
+            if (profileError) {
+              console.error('Error creating missing user profile:', profileError)
+            }
+
+            // Sign out after creating profile
+            await supabase.auth.signOut()
+          }
+        }
+
         setSuccess('Usuário demo já existe! Você pode fazer login normalmente.')
         setEmail('admin@crmfacil.com')
         setPassword('123456')

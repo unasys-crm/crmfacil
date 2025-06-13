@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<User>
   signOut: () => Promise<void>
 }
 
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -63,6 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
     if (error) throw error
+    if (!data.user) throw new Error('User creation failed')
+    
+    return data.user
   }
 
   const signOut = async () => {
