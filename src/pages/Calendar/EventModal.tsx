@@ -5,7 +5,7 @@ import { z } from 'zod'
 import DatePicker from 'react-datepicker'
 import Select from 'react-select'
 import { X, Calendar, Clock, Users, MapPin, FileText, Building2, User, Phone, Mail, Search } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { useSupabase } from '../../hooks/useSupabase'
 import 'react-datepicker/dist/react-datepicker.css'
 
 const eventSchema = z.object({
@@ -30,6 +30,7 @@ interface EventModalProps {
 }
 
 export default function EventModal({ event, onSave, onClose, eventTypes }: EventModalProps) {
+  const supabase = useSupabase()
   const [startDate, setStartDate] = useState(event?.start || new Date())
   const [endDate, setEndDate] = useState(event?.end || new Date(Date.now() + 60 * 60 * 1000))
   const [clients, setClients] = useState<any[]>([])

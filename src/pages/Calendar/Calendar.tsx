@@ -26,7 +26,7 @@ import EventModal from './EventModal'
 import EventDetailsModal from './EventDetailsModal'
 import CalendarFilters from './CalendarFilters'
 import CalendarCards from './CalendarCards'
-import { supabase } from '../../lib/supabase'
+import { useSupabase } from '../../hooks/useSupabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCompany } from '../../contexts/CompanyContext'
 
@@ -66,6 +66,7 @@ interface CalendarEvent {
 }
 
 export default function Calendar() {
+  const supabase = useSupabase()
   const { user } = useAuth()
   const { currentCompany } = useCompany()
   const [events, setEvents] = useState<CalendarEvent[]>([])

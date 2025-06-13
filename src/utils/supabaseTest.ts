@@ -1,5 +1,6 @@
 // Utilitário para testar a conexão com Supabase
 import { supabase } from '../lib/supabase'
+import { useSupabase } from '../hooks/useSupabase'
 
 // Função para verificar se a URL do Supabase está acessível
 async function checkSupabaseUrl(url: string) {
@@ -18,6 +19,8 @@ async function checkSupabaseUrl(url: string) {
 }
 
 export async function testSupabaseConnection() {
+  // Note: This function uses the default supabase client for testing
+  // In a component, you would use useSupabase() hook instead
   try {
     console.log('🔍 Testando conexão com Supabase...')
     

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { supabase } from '../../lib/supabase'
+import { useSupabase } from '../../hooks/useSupabase'
 import { useAuth } from '../../contexts/AuthContext'
 import EventModal from './EventModal'
 import EventDetailsModal from './EventDetailsModal'
@@ -278,6 +278,7 @@ function DayColumn({ date, events, onEventClick, onAddEvent }: DayColumnProps) {
 }
 
 export default function CalendarCards() {
+  const supabase = useSupabase()
   const { user } = useAuth()
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)

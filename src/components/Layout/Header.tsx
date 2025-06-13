@@ -1,10 +1,12 @@
 import { Bell, Search, ChevronDown, LogOut } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCompany } from '../../contexts/CompanyContext'
+import { useState } from 'react'
 
 export default function Header() {
   const { user, signOut } = useAuth()
   const { currentCompany, companies, switchCompany } = useCompany()
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false)
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -27,21 +29,64 @@ export default function Header() {
         <div className="flex items-center space-x-4">
           {/* Company Selector */}
           <div className="relative">
-            <select
-              className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={currentCompany?.id || ''}
-              onChange={(e) => {
-                const company = companies.find(c => c.id === e.target.value)
-                if (company) switchCompany(company)
-              }}
+            <button
+              onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
+              className="flex items-center space-x-2 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="font-medium text-gray-900">
+                  {currentCompany?.name || 'Selecione uma empresa'}
+                </span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-gray-400" />
+            </button>
+
+            {/* Company Dropdown */}
+            {showCompanyDropdown && (
+              <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                <div className="p-2">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide px-2 py-1 mb-1">
+                    Empresas Disponíveis
+                  </div>
+                  {companies.map((company) => (
+                    <button
+                      key={company.id}
+                      onClick={() => {
+                        switchCompany(company)
+                        setShowCompanyDropdown(false)
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-gray-100 transition-colors ${
+                        currentCompany?.id === company.id 
+                          ? 'bg-primary-50 text-primary-700 font-medium' 
+                          : 'text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            currentCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-300'
+                          }`}></div>
+                          <span>{company.name}</span>
+                        </div>
+                        {currentCompany?.id === company.id && (
+                          <div className="text-xs text-primary-600">Ativo</div>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 ml-4 mt-1">
+                        {company.domain}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="border-t border-gray-200 p-2">
+                  <div className="text-xs text-gray-500 px-2 py-1">
+                    💡 Cada empresa possui seu próprio banco de dados
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Notifications */}
