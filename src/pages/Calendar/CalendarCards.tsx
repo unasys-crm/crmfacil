@@ -226,7 +226,7 @@ function DayColumn({ date, events, onEventClick, onAddEvent }: DayColumnProps) {
 
   const isToday = isSameDay(date, new Date())
   const dayEvents = events.filter(event => 
-    isSameDay(parseISO(event.start.toISOString()), date)
+    isSameDay(event.start, date)
   )
 
   return (
@@ -487,7 +487,7 @@ export default function CalendarCards() {
         throw new Error('Usuário não autenticado')
       }
       
-      // Get user's tenant_id
+      // Get user's tenant_id, use current company if available
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('tenant_id')
@@ -496,7 +496,13 @@ export default function CalendarCards() {
 
       let tenantId = userData?.tenant_id
 
+      // Use current company's tenant_id if available
+      if (currentCompany?.id) {
+        tenantId = currentCompany.id
+      }
+
       if (!userData) {
+        // Create user record with current company or fallback tenant ID
         const { error: insertError } = await supabase
           .from('users')
           .insert({
@@ -504,14 +510,14 @@ export default function CalendarCards() {
             email: user.email || '',
             name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
             role: 'user',
-            tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+            tenant_id: tenantId || currentCompany?.id || 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
           })
 
         if (insertError) {
           throw new Error('Erro ao criar registro do usuário: ' + insertError.message)
         }
         
-        tenantId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+        tenantId = tenantId || currentCompany?.id || 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
       } else if (userError) {
         throw new Error('Não foi possível obter informações do usuário: ' + userError.message)
       } else if (!tenantId) {
