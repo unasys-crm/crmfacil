@@ -18,11 +18,14 @@ import {
   ExternalLink,
   Filter,
   Download,
-  Settings
+  Settings,
+  Grid3X3,
+  List
 } from 'lucide-react'
 import EventModal from './EventModal'
 import EventDetailsModal from './EventDetailsModal'
 import CalendarFilters from './CalendarFilters'
+import CalendarCards from './CalendarCards'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCompany } from '../../contexts/CompanyContext'
@@ -69,6 +72,7 @@ export default function Calendar() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<View>(Views.MONTH)
   const [date, setDate] = useState(new Date())
+  const [calendarView, setCalendarView] = useState<'calendar' | 'cards'>('calendar')
   const [showEventModal, setShowEventModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
@@ -360,6 +364,11 @@ export default function Calendar() {
     )
   }
 
+  // If cards view is selected, render the cards component
+  if (calendarView === 'cards') {
+    return <CalendarCards />
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -369,6 +378,32 @@ export default function Calendar() {
           <p className="text-gray-600">Gerencie seus compromissos e eventos</p>
         </div>
         <div className="flex items-center space-x-3">
+          {/* View Toggle */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setCalendarView('calendar')}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                calendarView === 'calendar'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <CalendarIcon className="h-4 w-4 mr-1 inline" />
+              Calendário
+            </button>
+            <button
+              onClick={() => setCalendarView('cards')}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                calendarView === 'cards'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Grid3X3 className="h-4 w-4 mr-1 inline" />
+              Cards
+            </button>
+          </div>
+
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="btn-secondary"
