@@ -182,12 +182,12 @@ export default function Calendar() {
   // Handle event creation/update
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     try {
-      // Get tenant_id from current company
+      // Get tenant_id from current company's tenant_id
       if (!currentCompany?.id) {
         throw new Error('Nenhuma empresa selecionada')
       }
       
-      const tenant_id = currentCompany.id
+      const tenant_id = currentCompany.tenant_id
 
       if (editingEvent?.id) {
         // Update existing event
