@@ -2,6 +2,7 @@ import { Bell, Search, ChevronDown, LogOut } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCompany } from '../../contexts/CompanyContext'
 import { useState } from 'react'
+import ConnectionStatus from '../UI/ConnectionStatus'
 
 export default function Header() {
   const { user, signOut } = useAuth()
@@ -27,6 +28,9 @@ export default function Header() {
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Connection Status */}
+          <ConnectionStatus />
+          
           {/* Company Selector */}
           <div className="relative">
             <button

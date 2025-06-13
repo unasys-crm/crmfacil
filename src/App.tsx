@@ -14,31 +14,36 @@ import Proposals from './pages/Proposals/Proposals'
 import Reports from './pages/Reports/Reports'
 import Administration from './pages/Administration/Administration'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
+import ErrorBoundary from './components/UI/ErrorBoundary'
 
 function App() {
   return (
-    <AuthProvider>
-      <CompanyProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="clients" element={<Clients />} />
-            <Route path="clients/new" element={<ClientForm />} />
-            <Route path="clients/:id/edit" element={<ClientForm />} />
-            <Route path="companies" element={<Companies />} />
-            <Route path="companies/new" element={<CompanyForm />} />
-            <Route path="companies/:id/edit" element={<CompanyForm />} />
-            <Route path="calendar" element={<Calendar />} />
-            <Route path="deals" element={<Deals />} />
-            <Route path="proposals" element={<Proposals />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="administration" element={<Administration />} />
-          </Route>
-        </Routes>
-      </CompanyProvider>
-    </AuthProvider>
+    <Router>
+      <ErrorBoundary>
+        <AuthProvider>
+          <CompanyProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="clients" element={<Clients />} />
+                <Route path="clients/new" element={<ClientForm />} />
+                <Route path="clients/:id/edit" element={<ClientForm />} />
+                <Route path="companies" element={<Companies />} />
+                <Route path="companies/new" element={<CompanyForm />} />
+                <Route path="companies/:id/edit" element={<CompanyForm />} />
+                <Route path="calendar" element={<Calendar />} />
+                <Route path="deals" element={<Deals />} />
+                <Route path="proposals" element={<Proposals />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="administration" element={<Administration />} />
+              </Route>
+            </Routes>
+          </CompanyProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </Router>
   )
 }
 
