@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import DatePicker from 'react-datepicker'
 import Select from 'react-select'
-import { X, Calendar, Clock, Users, MapPin, FileText, Building2, User, Phone, Mail } from 'lucide-react'
+import { X, Calendar, Clock, Users, MapPin, FileText, Building2, User, Phone, Mail, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import 'react-datepicker/dist/react-datepicker.css'
 
@@ -36,7 +36,8 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
   const [companies, setCompanies] = useState<any[]>([])
   const [deals, setDeals] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [contactType, setContactType] = useState<'client' | 'company'>('client')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedContact, setSelectedContact] = useState<any>(null)
 
   const {
     register,
@@ -63,32 +64,48 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
   const watchClientId = watch('client_id')
   const watchCompanyId = watch('company_id')
 
-  // Load clients and deals
+  // Load clients and companies
   useEffect(() => {
-    loadClients()
-    loadCompanies()
+    loadClientsAndCompanies()
     loadDeals()
   }, [])
 
-  // Load deals when client changes
+  // Load deals when client/company changes
   useEffect(() => {
     if (watchClientId || watchCompanyId) {
       loadDeals(watchClientId, watchCompanyId)
     }
   }, [watchClientId, watchCompanyId])
 
-  // Set initial contact type based on existing event
+  // Set initial selected contact based on existing event
   useEffect(() => {
-    if (event?.client_id) {
-      setContactType('client')
-    } else if (event?.company_id) {
-      setContactType('company')
+    if (event?.client_id && clients.length > 0) {
+      const client = clients.find(c => c.id === event.client_id)
+      if (client) {
+        setSelectedContact({
+          ...client,
+          type: 'client',
+          display_name: client.name,
+          display_info: client.email || client.phone || client.cpf
+        })
+      }
+    } else if (event?.company_id && companies.length > 0) {
+      const company = companies.find(c => c.id === event.company_id)
+      if (company) {
+        setSelectedContact({
+          ...company,
+          type: 'company',
+          display_name: company.name,
+          display_info: company.email || company.phone || company.cnpj
+        })
+      }
     }
-  }, [event])
+  }, [event, clients, companies])
 
-  const loadClients = async () => {
+  const loadClientsAndCompanies = async () => {
     try {
-      const { data, error } = await supabase
+      // Load clients
+      const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select(`
           id, 
@@ -96,20 +113,16 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
           email, 
           phone, 
           cpf,
+          city,
+          state,
           companies(id, name)
         `)
         .order('name')
 
-      if (error) throw error
-      setClients(data || [])
-    } catch (error) {
-      console.error('Error loading clients:', error)
-    }
-  }
+      if (clientsError) throw clientsError
 
-  const loadCompanies = async () => {
-    try {
-      const { data, error } = await supabase
+      // Load companies
+      const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
         .select(`
           id, 
@@ -123,10 +136,12 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
         `)
         .order('name')
 
-      if (error) throw error
-      setCompanies(data || [])
+      if (companiesError) throw companiesError
+
+      setClients(clientsData || [])
+      setCompanies(companiesData || [])
     } catch (error) {
-      console.error('Error loading companies:', error)
+      console.error('Error loading clients and companies:', error)
     }
   }
 
@@ -159,15 +174,77 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
     }
   }
 
-  const handleContactTypeChange = (type: 'client' | 'company') => {
-    setContactType(type)
-    // Clear the other field when switching
-    if (type === 'client') {
+  // Combine and filter clients and companies for search
+  const getFilteredContacts = () => {
+    if (!searchTerm.trim()) return []
+
+    const searchLower = searchTerm.toLowerCase()
+    const filteredContacts: any[] = []
+
+    // Add matching clients
+    clients.forEach(client => {
+      if (
+        client.name.toLowerCase().includes(searchLower) ||
+        client.email?.toLowerCase().includes(searchLower) ||
+        client.phone?.includes(searchTerm) ||
+        client.cpf?.includes(searchTerm)
+      ) {
+        filteredContacts.push({
+          ...client,
+          type: 'client',
+          display_name: client.name,
+          display_info: client.email || client.phone || client.cpf,
+          location: client.city && client.state ? `${client.city}, ${client.state}` : ''
+        })
+      }
+    })
+
+    // Add matching companies
+    companies.forEach(company => {
+      if (
+        company.name.toLowerCase().includes(searchLower) ||
+        company.email?.toLowerCase().includes(searchLower) ||
+        company.phone?.includes(searchTerm) ||
+        company.cnpj?.includes(searchTerm) ||
+        company.segment?.toLowerCase().includes(searchLower)
+      ) {
+        filteredContacts.push({
+          ...company,
+          type: 'company',
+          display_name: company.name,
+          display_info: company.email || company.phone || company.cnpj,
+          location: company.city && company.state ? `${company.city}, ${company.state}` : ''
+        })
+      }
+    })
+
+    return filteredContacts.slice(0, 10) // Limit to 10 results
+  }
+
+  const handleContactSelect = (contact: any) => {
+    setSelectedContact(contact)
+    setSearchTerm('')
+
+    if (contact.type === 'client') {
+      setValue('client_id', contact.id)
       setValue('company_id', undefined)
+      // Auto-select company if client has one
+      if (contact.companies?.id) {
+        setValue('company_id', contact.companies.id)
+      }
     } else {
+      setValue('company_id', contact.id)
       setValue('client_id', undefined)
     }
-    setValue('deal_id', undefined) // Clear deals when switching contact type
+
+    setValue('deal_id', undefined) // Clear deals when changing contact
+  }
+
+  const clearSelectedContact = () => {
+    setSelectedContact(null)
+    setValue('client_id', undefined)
+    setValue('company_id', undefined)
+    setValue('deal_id', undefined)
   }
 
   const onSubmit = async (data: EventFormData) => {
@@ -189,26 +266,6 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
     }
   }
 
-  const clientOptions = clients.map(client => ({
-    value: client.id,
-    label: client.name,
-    email: client.email,
-    phone: client.phone,
-    cpf: client.cpf,
-    company: client.companies?.name,
-    company_id: client.companies?.id
-  }))
-
-  const companyOptions = companies.map(company => ({
-    value: company.id,
-    label: company.name,
-    email: company.email,
-    phone: company.phone,
-    cnpj: company.cnpj,
-    segment: company.segment,
-    location: company.city && company.state ? `${company.city}, ${company.state}` : ''
-  }))
-
   const dealOptions = deals.map(deal => ({
     value: deal.id,
     label: `${deal.title} - ${deal.stage}`,
@@ -219,83 +276,6 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
     client: deal.clients?.name,
     company: deal.companies?.name
   }))
-
-  // Custom option component for clients
-  const ClientOption = ({ data, ...props }: any) => (
-    <div {...props} className="flex items-center p-2 hover:bg-gray-50 cursor-pointer">
-      <div className="flex-shrink-0 mr-3">
-        <User className="h-8 w-8 text-gray-400 bg-gray-100 rounded-full p-1" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium text-gray-900 truncate">{data.label}</p>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            PF
-          </span>
-        </div>
-        <div className="flex items-center space-x-4 mt-1">
-          {data.email && (
-            <div className="flex items-center text-xs text-gray-500">
-              <Mail className="h-3 w-3 mr-1" />
-              {data.email}
-            </div>
-          )}
-          {data.phone && (
-            <div className="flex items-center text-xs text-gray-500">
-              <Phone className="h-3 w-3 mr-1" />
-              {data.phone}
-            </div>
-          )}
-        </div>
-        {data.company && (
-          <p className="text-xs text-gray-500 mt-1">
-            Empresa: {data.company}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-
-  // Custom option component for companies
-  const CompanyOption = ({ data, ...props }: any) => (
-    <div {...props} className="flex items-center p-2 hover:bg-gray-50 cursor-pointer">
-      <div className="flex-shrink-0 mr-3">
-        <Building2 className="h-8 w-8 text-gray-400 bg-gray-100 rounded-full p-1" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium text-gray-900 truncate">{data.label}</p>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            PJ
-          </span>
-        </div>
-        <div className="flex items-center space-x-4 mt-1">
-          {data.email && (
-            <div className="flex items-center text-xs text-gray-500">
-              <Mail className="h-3 w-3 mr-1" />
-              {data.email}
-            </div>
-          )}
-          {data.phone && (
-            <div className="flex items-center text-xs text-gray-500">
-              <Phone className="h-3 w-3 mr-1" />
-              {data.phone}
-            </div>
-          )}
-        </div>
-        {data.segment && (
-          <p className="text-xs text-gray-500 mt-1">
-            Segmento: {data.segment}
-          </p>
-        )}
-        {data.location && (
-          <p className="text-xs text-gray-500">
-            {data.location}
-          </p>
-        )}
-      </div>
-    </div>
-  )
 
   // Custom option component for deals
   const DealOption = ({ data, ...props }: any) => (
@@ -313,6 +293,8 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
       </div>
     </div>
   )
+
+  const filteredContacts = getFilteredContacts()
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -406,69 +388,142 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
             </div>
           </div>
 
-          {/* Contact Type Selection */}
+          {/* Contact Search */}
           <div>
             <label className="form-label">
               <Users className="h-4 w-4 inline mr-2" />
-              Tipo de Contato
+              Cliente/Empresa
             </label>
-            <div className="flex space-x-4 mb-3">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={contactType === 'client'}
-                  onChange={() => handleContactTypeChange('client')}
-                  className="mr-2 text-primary-600 focus:ring-primary-500"
-                />
-                <span className="text-sm text-gray-700">Cliente (Pessoa Física)</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={contactType === 'company'}
-                  onChange={() => handleContactTypeChange('company')}
-                  className="mr-2 text-primary-600 focus:ring-primary-500"
-                />
-                <span className="text-sm text-gray-700">Empresa (Pessoa Jurídica)</span>
-              </label>
-            </div>
-
-            {contactType === 'client' ? (
-              <Select
-                options={clientOptions}
-                value={clientOptions.find(option => option.value === watchClientId) || null}
-                onChange={(option) => {
-                  setValue('client_id', option?.value || undefined)
-                  // Auto-select company if client has one
-                  if (option?.company_id) {
-                    setValue('company_id', option.company_id)
-                  }
-                }}
-                placeholder="Selecione um cliente"
-                isClearable
-                className="react-select-container"
-                classNamePrefix="react-select"
-                components={{
-                  Option: ClientOption
-                }}
-                isSearchable
-                noOptionsMessage={() => "Nenhum cliente encontrado"}
-              />
+            
+            {/* Selected Contact Display */}
+            {selectedContact ? (
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 mb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      {selectedContact.type === 'client' ? (
+                        <User className="h-8 w-8 text-blue-600 bg-blue-100 rounded-full p-1" />
+                      ) : (
+                        <Building2 className="h-8 w-8 text-green-600 bg-green-100 rounded-full p-1" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {selectedContact.display_name}
+                        </p>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          selectedContact.type === 'client' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {selectedContact.type === 'client' ? 'Pessoa Física' : 'Pessoa Jurídica'}
+                        </span>
+                      </div>
+                      {selectedContact.display_info && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {selectedContact.display_info}
+                        </p>
+                      )}
+                      {selectedContact.location && (
+                        <p className="text-xs text-gray-500">
+                          {selectedContact.location}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearSelectedContact}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             ) : (
-              <Select
-                options={companyOptions}
-                value={companyOptions.find(option => option.value === watchCompanyId) || null}
-                onChange={(option) => setValue('company_id', option?.value || undefined)}
-                placeholder="Selecione uma empresa"
-                isClearable
-                className="react-select-container"
-                classNamePrefix="react-select"
-                components={{
-                  Option: CompanyOption
-                }}
-                isSearchable
-                noOptionsMessage={() => "Nenhuma empresa encontrada"}
-              />
+              /* Search Input */
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="form-input pl-10"
+                  placeholder="Pesquisar cliente ou empresa por nome, email, telefone..."
+                />
+
+                {/* Search Results */}
+                {searchTerm.trim() && filteredContacts.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {filteredContacts.map((contact) => (
+                      <div
+                        key={`${contact.type}-${contact.id}`}
+                        className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        onClick={() => handleContactSelect(contact)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            {contact.type === 'client' ? (
+                              <User className="h-8 w-8 text-blue-600 bg-blue-100 rounded-full p-1" />
+                            ) : (
+                              <Building2 className="h-8 w-8 text-green-600 bg-green-100 rounded-full p-1" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {contact.display_name}
+                              </p>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                contact.type === 'client' 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {contact.type === 'client' ? 'PF' : 'PJ'}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-4 mt-1">
+                              {contact.email && (
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <Mail className="h-3 w-3 mr-1" />
+                                  {contact.email}
+                                </div>
+                              )}
+                              {contact.phone && (
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <Phone className="h-3 w-3 mr-1" />
+                                  {contact.phone}
+                                </div>
+                              )}
+                            </div>
+                            {contact.location && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {contact.location}
+                              </p>
+                            )}
+                            {contact.segment && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Segmento: {contact.segment}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No results message */}
+                {searchTerm.trim() && filteredContacts.length === 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-4 text-center text-gray-500">
+                    <p className="text-sm">Nenhum cliente ou empresa encontrado</p>
+                    <p className="text-xs mt-1">Tente pesquisar por nome, email ou telefone</p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
