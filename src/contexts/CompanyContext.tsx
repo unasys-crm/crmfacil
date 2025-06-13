@@ -17,6 +17,7 @@ interface CompanyContextType {
   switchCompany: (company: Company) => void
   loading: boolean
   supabaseClient: SupabaseClient<Database> | null
+  connectionStatus: 'connected' | 'disconnected' | 'testing' | 'unknown'
 }
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined)
@@ -53,6 +54,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [supabaseClient, setSupabaseClient] = useState<SupabaseClient<Database> | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'testing' | 'unknown'>('unknown')
 
   useEffect(() => {
     if (user) {
@@ -146,6 +148,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           }
         )
         setSupabaseClient(client)
+        setConnectionStatus('unknown')
         return
       }
 
@@ -165,6 +168,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       )
       
       setSupabaseClient(client)
+      setConnectionStatus('unknown')
       
       // Test the connection with a delay to ensure client is ready
       setTimeout(() => {
@@ -173,6 +177,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       
     } catch (error) {
       console.error('Error creating Supabase client:', error)
+      setConnectionStatus('disconnected')
       // Fallback to default client
       const client = createClient<Database>(
         import.meta.env.VITE_SUPABASE_URL,
@@ -183,10 +188,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   }
 
   const testConnection = async (client: SupabaseClient, companyName: string) => {
+    setConnectionStatus('testing')
+    
     try {
-      // Add timeout to prevent hanging requests - reduced timeout for faster feedback
+      // Add timeout to prevent hanging requests
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Connection timeout')), 5000)
+        setTimeout(() => reject(new Error('Connection timeout')), 8000)
       })
 
       const connectionPromise = client
@@ -198,21 +205,42 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = result || { data: null, error: null }
       
       if (error) {
+        setConnectionStatus('disconnected')
+        
         if (error.message.includes('Failed to fetch')) {
           console.warn(`⚠️ Network connectivity issue for ${companyName}. This might be due to:`)
           console.warn('   • Firewall or proxy blocking the connection')
           console.warn('   • Supabase project is paused or unavailable')
           console.warn('   • Network connectivity issues')
           console.warn('   • Invalid Supabase URL or credentials')
+          console.warn('💡 Try using the connection test button on the login page for detailed diagnostics')
         } else {
           console.warn(`⚠️ Database connection test failed for ${companyName}:`, error.message)
         }
       } else {
+        setConnectionStatus('connected')
         console.log(`✅ Successfully connected to ${companyName} database`)
       }
     } catch (error) {
-      // Silently handle connection test failures - don't block the app
-      console.warn(`⚠️ Connection test failed for ${companyName}, but continuing...`)
+      setConnectionStatus('disconnected')
+      
+      if (error instanceof Error) {
+        if (error.message === 'Connection timeout') {
+          console.warn(`⚠️ Connection timeout for ${companyName}. The database might be slow to respond.`)
+        } else if (error.message.includes('Failed to fetch')) {
+          console.warn(`⚠️ Network error for ${companyName}:`, error.message)
+          console.warn('💡 Possible solutions:')
+          console.warn('   1. Check your internet connection')
+          console.warn('   2. Verify Supabase project is not paused')
+          console.warn('   3. Check firewall/proxy settings')
+          console.warn('   4. Try the connection test on the login page')
+        } else {
+          console.warn(`⚠️ Unexpected error testing connection for ${companyName}:`, error.message)
+        }
+      }
+      
+      // Don't throw the error - let the app continue to work in offline mode
+      throw error
     }
   }
 
@@ -220,25 +248,30 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     try {
       await testConnection(client, companyName)
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === 'Connection timeout') {
-          console.warn(`⚠️ Connection timeout for ${companyName}. The database might be slow to respond.`)
-        } else if (error.message.includes('Failed to fetch')) {
-          console.warn(`⚠️ Network error for ${companyName}:`, error.message)
-          console.warn('💡 Try the connection test button on the login page for detailed diagnostics')
-        } else {
-          console.warn(`⚠️ Unexpected error testing connection for ${companyName}:`, error.message)
+      // Connection failed, but don't block the app
+      console.warn(`⚠️ Connection test failed for ${companyName}, continuing in offline mode...`)
+      
+      // Show user-friendly notification about connection issues
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const lastNotification = localStorage.getItem('lastConnectionWarning')
+        const now = Date.now()
+        
+        // Only show notification once every 5 minutes to avoid spam
+        if (!lastNotification || (now - parseInt(lastNotification)) > 300000) {
+          localStorage.setItem('lastConnectionWarning', now.toString())
+          
+          // You could show a toast notification here instead of console.warn
+          console.warn('🔌 Aviso: Problemas de conectividade detectados. Algumas funcionalidades podem estar limitadas.')
+          console.warn('💡 Verifique sua conexão ou use o teste de conectividade na página de login.')
         }
-      } else {
-        console.warn(`⚠️ Unknown error testing connection for ${companyName}:`, error)
       }
     }
-    // Always continue regardless of connection test results
   }
 
   const switchCompany = (company: Company) => {
     console.log(`🏢 Switching to company: ${company.name}`)
     setCurrentCompany(company)
+    setConnectionStatus('unknown')
     
     // Store in localStorage for persistence
     localStorage.setItem('currentCompanyId', company.id)
@@ -257,6 +290,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     switchCompany,
     loading,
     supabaseClient,
+    connectionStatus,
   }
 
   return (

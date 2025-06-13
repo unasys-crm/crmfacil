@@ -5,21 +5,21 @@ export interface Database {
         Row: {
           id: string
           name: string
-          razao_social: string
-          cnpj: string
-          segment: string
-          origin: string
-          store_count: number
-          address: string
-          cep: string
-          city: string
-          state: string
-          email: string
-          phone: string
-          tags: string[]
-          custom_fields: Record<string, any>
-          created_at: string
-          updated_at: string
+          razao_social?: string
+          cnpj?: string
+          segment?: string
+          origin?: string
+          store_count?: number
+          address?: string
+          cep?: string
+          city?: string
+          state?: string
+          email?: string
+          phone?: string
+          tags?: string[]
+          custom_fields?: Record<string, any>
+          created_at?: string
+          updated_at?: string
           tenant_id: string
         }
         Insert: {
@@ -65,20 +65,20 @@ export interface Database {
         Row: {
           id: string
           name: string
-          cpf: string
-          email: string
-          phone: string
-          address: string
-          cep: string
-          city: string
-          state: string
-          company_id: string
-          responsible_ids: string[]
-          observations: string
-          tags: string[]
-          custom_fields: Record<string, any>
-          created_at: string
-          updated_at: string
+          cpf?: string
+          email?: string
+          phone?: string
+          address?: string
+          cep?: string
+          city?: string
+          state?: string
+          company_id?: string
+          responsible_ids?: string[]
+          observations?: string
+          tags?: string[]
+          custom_fields?: Record<string, any>
+          created_at?: string
+          updated_at?: string
           tenant_id: string
         }
         Insert: {
@@ -122,18 +122,18 @@ export interface Database {
         Row: {
           id: string
           title: string
-          description: string
-          value: number
+          description?: string
+          value?: number
           stage: string
-          probability: number
-          expected_close_date: string
-          client_id: string
-          company_id: string
+          probability?: number
+          expected_close_date?: string
+          client_id?: string
+          company_id?: string
           responsible_id: string
           pipeline_id: string
-          custom_fields: Record<string, any>
-          created_at: string
-          updated_at: string
+          custom_fields?: Record<string, any>
+          created_at?: string
+          updated_at?: string
           tenant_id: string
         }
         Insert: {
@@ -179,9 +179,9 @@ export interface Database {
             color: string
             order: number
           }>
-          is_default: boolean
-          created_at: string
-          updated_at: string
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
           tenant_id: string
         }
         Insert: {
@@ -216,11 +216,11 @@ export interface Database {
           id: string
           email: string
           name: string
-          role: string
-          permissions: string[]
-          tenant_id: string
-          created_at: string
-          updated_at: string
+          role?: string
+          permissions?: string[]
+          tenant_id?: string
+          created_at?: string
+          updated_at?: string
         }
         Insert: {
           id: string
@@ -228,7 +228,7 @@ export interface Database {
           name: string
           role?: string
           permissions?: string[]
-          tenant_id: string
+          tenant_id?: string
           created_at?: string
           updated_at?: string
         }
@@ -245,9 +245,9 @@ export interface Database {
           id: string
           name: string
           domain: string
-          settings: Record<string, any>
-          created_at: string
-          updated_at: string
+          settings?: Record<string, any>
+          created_at?: string
+          updated_at?: string
         }
         Insert: {
           id?: string
@@ -268,19 +268,26 @@ export interface Database {
         Row: {
           id: string
           title: string
-          description: string
+          description?: string
           start_date: string
           end_date: string
-          all_day: boolean
-          type: string
-          client_id: string
-          deal_id: string
+          all_day?: boolean
+          type?: string
+          client_id?: string
+          company_id?: string
+          deal_id?: string
           responsible_id: string
-          google_event_id: string
-          outlook_event_id: string
-          created_at: string
-          updated_at: string
+          location?: string
+          google_event_id?: string
+          outlook_event_id?: string
+          created_at?: string
+          updated_at?: string
           tenant_id: string
+          // Joined data
+          clients?: { id: string; name: string; email?: string; phone?: string }
+          companies?: { id: string; name: string; email?: string; phone?: string }
+          deals?: { id: string; title: string; value?: number; stage: string }
+          users?: { id: string; name: string; email?: string }
         }
         Insert: {
           id?: string
@@ -291,8 +298,10 @@ export interface Database {
           all_day?: boolean
           type?: string
           client_id?: string
+          company_id?: string
           deal_id?: string
           responsible_id: string
+          location?: string
           google_event_id?: string
           outlook_event_id?: string
           created_at?: string
@@ -307,8 +316,10 @@ export interface Database {
           all_day?: boolean
           type?: string
           client_id?: string
+          company_id?: string
           deal_id?: string
           responsible_id?: string
+          location?: string
           google_event_id?: string
           outlook_event_id?: string
           updated_at?: string
