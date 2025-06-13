@@ -168,7 +168,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       
       // Test the connection with a delay to ensure client is ready
       setTimeout(() => {
-        testConnection(client, company.name)
+        testConnectionSafely(client, company.name)
       }, 1000)
       
     } catch (error) {
@@ -184,9 +184,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
   const testConnection = async (client: SupabaseClient, companyName: string) => {
     try {
-      // Add timeout to prevent hanging requests
+      // Add timeout to prevent hanging requests - reduced timeout for faster feedback
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Connection timeout')), 10000)
+        setTimeout(() => reject(new Error('Connection timeout')), 5000)
       })
 
       const connectionPromise = client
@@ -194,7 +194,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         .select('count')
         .limit(1)
 
-      const { data, error } = await Promise.race([connectionPromise, timeoutPromise]) as any
+      const result = await Promise.race([connectionPromise, timeoutPromise]) as any
+      const { data, error } = result || { data: null, error: null }
       
       if (error) {
         if (error.message.includes('Failed to fetch')) {
@@ -210,6 +211,15 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         console.log(`✅ Successfully connected to ${companyName} database`)
       }
     } catch (error) {
+      // Silently handle connection test failures - don't block the app
+      console.warn(`⚠️ Connection test failed for ${companyName}, but continuing...`)
+    }
+  }
+
+  const testConnectionSafely = async (client: SupabaseClient, companyName: string) => {
+    try {
+      await testConnection(client, companyName)
+    } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'Connection timeout') {
           console.warn(`⚠️ Connection timeout for ${companyName}. The database might be slow to respond.`)
@@ -223,6 +233,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         console.warn(`⚠️ Unknown error testing connection for ${companyName}:`, error)
       }
     }
+    // Always continue regardless of connection test results
   }
 
   const switchCompany = (company: Company) => {
