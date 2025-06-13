@@ -48,8 +48,8 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
       description: event?.description || '',
       type: event?.type || 'meeting',
       allDay: event?.allDay || false,
-      client_id: event?.client_id || '',
-      deal_id: event?.deal_id || '',
+      client_id: event?.client_id || undefined,
+      deal_id: event?.deal_id || undefined,
       location: event?.location || '',
       attendees: event?.attendees || []
     }
@@ -235,7 +235,7 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
             <Select
               options={clientOptions}
               value={clientOptions.find(option => option.value === watchClientId) || null}
-              onChange={(option) => setValue('client_id', option?.value || '')}
+              onChange={(option) => setValue('client_id', option?.value || undefined)}
               placeholder="Selecione um cliente"
               isClearable
               className="react-select-container"
@@ -250,7 +250,7 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
               <Select
                 options={dealOptions}
                 value={dealOptions.find(option => option.value === watch('deal_id')) || null}
-                onChange={(option) => setValue('deal_id', option?.value || '')}
+                onChange={(option) => setValue('deal_id', option?.value || undefined)}
                 placeholder="Selecione um negócio"
                 isClearable
                 className="react-select-container"
