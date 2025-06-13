@@ -210,7 +210,7 @@ export default function Calendar() {
         throw new Error('Usuário não autenticado')
       }
       
-      // Get user's tenant_id from the users table, create user record if it doesn't exist
+      // Get user's tenant_id, use current company if available
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('tenant_id')
@@ -219,9 +219,14 @@ export default function Calendar() {
 
       let tenantId = userData?.tenant_id
 
+      // Use current company's tenant_id if available
+      if (currentCompany?.id) {
+        tenantId = currentCompany.id
+      }
+
       // If user record doesn't exist in public.users table, create it
       if (!userData) {
-        // Create user record with demo tenant ID (you may want to adjust this logic)
+        // Create user record with current company or fallback tenant ID
         const { error: insertError } = await supabase
           .from('users')
           .insert({
@@ -229,14 +234,14 @@ export default function Calendar() {
             email: user.email || '',
             name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
             role: 'user',
-            tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' // Demo tenant ID
+            tenant_id: tenantId || currentCompany?.id || 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
           })
 
         if (insertError) {
           throw new Error('Erro ao criar registro do usuário: ' + insertError.message)
         }
         
-        tenantId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+        tenantId = tenantId || currentCompany?.id || 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
       } else if (userError) {
         throw new Error('Não foi possível obter informações do usuário: ' + userError.message)
       } else if (!tenantId) {
@@ -257,6 +262,7 @@ export default function Calendar() {
             client_id: eventData.client_id,
             company_id: eventData.company_id,
             deal_id: eventData.deal_id,
+            location: eventData.location,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingEvent.id)
@@ -276,6 +282,7 @@ export default function Calendar() {
             client_id: eventData.client_id,
             company_id: eventData.company_id,
             deal_id: eventData.deal_id,
+            location: eventData.location,
             responsible_id: user?.id,
             tenant_id: tenantId
           })
