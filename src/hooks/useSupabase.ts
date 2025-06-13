@@ -1,10 +1,103 @@
 import { useCompany } from '../contexts/CompanyContext'
 import { supabase as defaultSupabase } from '../lib/supabase'
 
-// Custom hook to get the current company's Supabase client
 export function useSupabase() {
   const { supabaseClient } = useCompany()
   
-  // Return the company-specific client or fallback to default
-  return supabaseClient || defaultSupabase
+  // Return the company-specific client if available, otherwise fall back to default
+  // Add error handling wrapper to catch network issues
+  const client = supabaseClient || defaultSupabase
+  
+  // Wrap client methods with error handling
+  const wrappedClient = {
+    ...client,
+    from: (table: string) => {
+      const query = client.from(table)
+      
+      // Wrap query methods to handle network errors gracefully
+      const originalSelect = query.select.bind(query)
+      const originalInsert = query.insert.bind(query)
+      const originalUpdate = query.update.bind(query)
+      const originalDelete = query.delete.bind(query)
+      
+      return {
+        ...query,
+        select: (...args: any[]) => {
+          const result = originalSelect(...args)
+          return {
+            ...result,
+            then: (onResolve: any, onReject?: any) => {
+              return result.then(
+                (data: any) => onResolve(data),
+                (error: any) => {
+                  if (error?.message?.includes('Failed to fetch')) {
+                    console.warn(`⚠️ Network error accessing table '${table}'. Using fallback data.`)
+                    // Return empty result instead of throwing
+                    return onResolve({ data: [], error: null, count: 0 })
+                  }
+                  return onReject ? onReject(error) : Promise.reject(error)
+                }
+              )
+            }
+          }
+        },
+        insert: (...args: any[]) => {
+          const result = originalInsert(...args)
+          return {
+            ...result,
+            then: (onResolve: any, onReject?: any) => {
+              return result.then(
+                (data: any) => onResolve(data),
+                (error: any) => {
+                  if (error?.message?.includes('Failed to fetch')) {
+                    console.warn(`⚠️ Network error inserting into table '${table}'. Operation failed.`)
+                    return onReject ? onReject(error) : Promise.reject(error)
+                  }
+                  return onReject ? onReject(error) : Promise.reject(error)
+                }
+              )
+            }
+          }
+        },
+        update: (...args: any[]) => {
+          const result = originalUpdate(...args)
+          return {
+            ...result,
+            then: (onResolve: any, onReject?: any) => {
+              return result.then(
+                (data: any) => onResolve(data),
+                (error: any) => {
+                  if (error?.message?.includes('Failed to fetch')) {
+                    console.warn(`⚠️ Network error updating table '${table}'. Operation failed.`)
+                    return onReject ? onReject(error) : Promise.reject(error)
+                  }
+                  return onReject ? onReject(error) : Promise.reject(error)
+                }
+              )
+            }
+          }
+        },
+        delete: (...args: any[]) => {
+          const result = originalDelete(...args)
+          return {
+            ...result,
+            then: (onResolve: any, onReject?: any) => {
+              return result.then(
+                (data: any) => onResolve(data),
+                (error: any) => {
+                  if (error?.message?.includes('Failed to fetch')) {
+                    console.warn(`⚠️ Network error deleting from table '${table}'. Operation failed.`)
+                    return onReject ? onReject(error) : Promise.reject(error)
+                  }
+                  return onReject ? onReject(error) : Promise.reject(error)
+                }
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return wrappedClient
 }
