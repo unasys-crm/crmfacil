@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useSortable } from '@dnd-kit/sortable'
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import { useSortable, useDroppable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { 
   Calendar as CalendarIcon, 
@@ -108,18 +108,25 @@ function EventCard({ event, onClick, isDragging }: EventCardProps) {
   const responsibleName = event.responsible?.name || 'Usuário'
   const avatarColor = getAvatarColor(responsibleName)
 
+  // Handle click to edit (prevent when dragging)
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isDragging && !isSortableDragging) {
+      onClick()
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       className={`
         bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3 cursor-pointer
         hover:shadow-md transition-all duration-200 group
         ${isDragging || isSortableDragging ? 'rotate-3 scale-105' : ''}
       `}
-      onClick={onClick}
+      onClick={handleClick}
     >
       {/* Header with type and time */}
       <div className="flex items-center justify-between mb-2">
@@ -149,7 +156,10 @@ function EventCard({ event, onClick, isDragging }: EventCardProps) {
       </div>
 
       {/* Event title */}
-      <h4 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
+      <h4 
+        className="text-sm font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors"
+        {...listeners}
+      >
         {event.title}
       </h4>
 
@@ -209,13 +219,17 @@ interface DayColumnProps {
 }
 
 function DayColumn({ date, events, onEventClick, onAddEvent }: DayColumnProps) {
+  const { setNodeRef } = useDroppable({
+    id: date.toISOString(),
+  })
+
   const isToday = isSameDay(date, new Date())
   const dayEvents = events.filter(event => 
     isSameDay(parseISO(event.start.toISOString()), date)
   )
 
   return (
-    <div className="flex flex-col h-full">
+    <div ref={setNodeRef} className="flex flex-col h-full">
       {/* Day header */}
       <div className={`
         p-3 border-b border-gray-200 text-center
@@ -371,14 +385,29 @@ export default function CalendarCards() {
     if (!over) return
 
     const eventId = active.id as string
-    const targetDate = over.id as string
+    const targetDateString = over.id as string
 
     // Find the event being moved
     const eventToMove = events.find(e => e.id === eventId)
     if (!eventToMove) return
 
-    // Parse target date
-    const newDate = new Date(targetDate)
+    // Parse target date - could be a date string or another event ID
+    let newDate: Date
+    
+    // Check if it's a date string (ISO format)
+    if (targetDateString.includes('T') || targetDateString.match(/^\d{4}-\d{2}-\d{2}/)) {
+      newDate = new Date(targetDateString)
+    } else {
+      // It might be another event ID, find the event and use its date
+      const targetEvent = events.find(e => e.id === targetDateString)
+      if (targetEvent) {
+        newDate = new Date(targetEvent.start)
+        newDate.setHours(0, 0, 0, 0) // Reset to start of day
+      } else {
+        return // Invalid target
+      }
+    }
+    
     if (isNaN(newDate.getTime())) return
 
     // Calculate new start and end times
@@ -386,8 +415,9 @@ export default function CalendarCards() {
     const originalEnd = eventToMove.end
     const duration = originalEnd.getTime() - originalStart.getTime()
 
-    const newStart = new Date(newDate)
-    newStart.setHours(originalStart.getHours(), originalStart.getMinutes())
+    // If dragging to a different day, preserve the time
+    const newStart = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 
+                             originalStart.getHours(), originalStart.getMinutes())
     
     const newEnd = new Date(newStart.getTime() + duration)
 
@@ -410,6 +440,9 @@ export default function CalendarCards() {
           ? { ...e, start: newStart, end: newEnd }
           : e
       ))
+      
+      // Show success message
+      console.log(`Evento "${eventToMove.title}" movido para ${format(newStart, 'dd/MM/yyyy', { locale: ptBR })}`)
     } catch (error) {
       console.error('Error moving event:', error)
       alert('Erro ao mover evento')
@@ -418,8 +451,9 @@ export default function CalendarCards() {
 
   // Handle event click
   const handleEventClick = (event: CalendarEvent) => {
-    setSelectedEvent(event)
-    setShowDetailsModal(true)
+    // Set event for editing instead of just viewing details
+    setEditingEvent(event)
+    setShowEventModal(true)
   }
 
   // Handle add event
@@ -675,11 +709,33 @@ export default function CalendarCards() {
         {/* Drag Overlay */}
         <DragOverlay>
           {draggedEvent ? (
-            <EventCard
-              event={draggedEvent}
-              onClick={() => {}}
-              isDragging
-            />
+            <div className="bg-white rounded-lg shadow-lg border-2 border-primary-300 p-3 transform rotate-3 scale-105">
+              <div className="flex items-center space-x-2 mb-2">
+                <div 
+                  className="p-1 rounded"
+                  style={{ backgroundColor: `${eventTypes[draggedEvent.type].color}20` }}
+                >
+                  <eventTypes[draggedEvent.type].icon 
+                    className="h-3 w-3"
+                    style={{ color: eventTypes[draggedEvent.type].color }}
+                  />
+                </div>
+                <span className="text-xs text-gray-500">
+                  {draggedEvent.allDay ? 'Dia inteiro' : format(draggedEvent.start, 'HH:mm', { locale: ptBR })}
+                </span>
+              </div>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">
+                {draggedEvent.title}
+              </h4>
+              {(draggedEvent.client || draggedEvent.company) && (
+                <div className="flex items-center space-x-1">
+                  <Users className="h-3 w-3 text-gray-400" />
+                  <span className="text-xs text-gray-600 truncate">
+                    {draggedEvent.client?.name || draggedEvent.company?.name}
+                  </span>
+                </div>
+              )}
+            </div>
           ) : null}
         </DragOverlay>
       </DndContext>
