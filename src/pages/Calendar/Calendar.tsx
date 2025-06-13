@@ -196,12 +196,12 @@ export default function Calendar() {
         .from('users')
         .select('tenant_id')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       let tenantId = userData?.tenant_id
 
       // If user record doesn't exist in public.users table, create it
-      if (userError && userError.code === 'PGRST116') {
+      if (!userData) {
         // Create user record with demo tenant ID (you may want to adjust this logic)
         const { error: insertError } = await supabase
           .from('users')
@@ -218,8 +218,10 @@ export default function Calendar() {
         }
         
         tenantId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
-      } else if (userError || !tenantId) {
-        throw new Error('Não foi possível obter informações do usuário: ' + (userError?.message || 'Tenant ID não encontrado'))
+      } else if (userError) {
+        throw new Error('Não foi possível obter informações do usuário: ' + userError.message)
+      } else if (!tenantId) {
+        throw new Error('Tenant ID não encontrado para o usuário')
       }
 
       if (editingEvent?.id) {
