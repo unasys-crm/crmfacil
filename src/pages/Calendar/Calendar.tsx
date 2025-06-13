@@ -180,18 +180,22 @@ export default function Calendar() {
   // Handle event creation/update
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     try {
-      let tenant_id = null
+      let tenant_id: string | null = null
       
       // Get user's tenant_id
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('tenant_id')
         .eq('id', user?.id)
-        .single()
+        .maybeSingle()
       
       if (userError) {
         console.error('Error getting user tenant:', userError)
         throw new Error('Erro ao obter informações do usuário')
+      }
+      
+      if (!userData || !userData.tenant_id) {
+        throw new Error('Configuração de tenant do usuário não encontrada')
       }
       
       tenant_id = userData.tenant_id
