@@ -182,18 +182,12 @@ export default function Calendar() {
   // Handle event creation/update
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     try {
-      // Get tenant_id from user's tenant_id
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('tenant_id')
-        .eq('id', user?.id)
-        .single()
-
-      if (userError || !userData?.tenant_id) {
-        throw new Error('Não foi possível obter informações do usuário')
+      // Get tenant_id from current company
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada')
       }
       
-      const tenant_id = userData.tenant_id
+      const tenant_id = currentCompany.id
 
       if (editingEvent?.id) {
         // Update existing event
