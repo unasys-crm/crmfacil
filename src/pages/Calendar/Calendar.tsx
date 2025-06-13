@@ -50,6 +50,7 @@ interface CalendarEvent {
   allDay?: boolean
   type: keyof typeof eventTypes
   client_id?: string
+  company_id?: string
   deal_id?: string
   responsible_id: string
   location?: string
@@ -91,8 +92,9 @@ export default function Calendar() {
         .from('events')
         .select(`
           *,
-          clients(name),
-          deals(title)
+          clients(id, name, email, phone),
+          companies(id, name, email, phone),
+          deals(id, title, value, stage)
         `)
         .order('start_date', { ascending: true })
 
@@ -107,12 +109,17 @@ export default function Calendar() {
         allDay: event.all_day,
         type: event.type,
         client_id: event.client_id,
+        company_id: event.company_id,
         deal_id: event.deal_id,
         responsible_id: event.responsible_id,
         google_event_id: event.google_event_id,
         outlook_event_id: event.outlook_event_id,
         created_at: event.created_at,
-        updated_at: event.updated_at
+        updated_at: event.updated_at,
+        // Include related data for display
+        client: event.clients,
+        company: event.companies,
+        deal: event.deals
       })) || []
 
       setEvents(formattedEvents)
@@ -127,7 +134,7 @@ export default function Calendar() {
   const filteredEvents = events.filter(event => {
     if (!filters.types.includes(event.type)) return false
     if (filters.responsible !== 'all' && event.responsible_id !== filters.responsible) return false
-    if (filters.client !== 'all' && event.client_id !== filters.client) return false
+    if (filters.client !== 'all' && event.client_id !== filters.client && event.company_id !== filters.client) return false
     return true
   })
 
@@ -185,6 +192,7 @@ export default function Calendar() {
             all_day: eventData.allDay,
             type: eventData.type,
             client_id: eventData.client_id,
+            company_id: eventData.company_id,
             deal_id: eventData.deal_id,
             updated_at: new Date().toISOString()
           })
@@ -203,6 +211,7 @@ export default function Calendar() {
             all_day: eventData.allDay,
             type: eventData.type,
             client_id: eventData.client_id,
+            company_id: eventData.company_id,
             deal_id: eventData.deal_id,
             responsible_id: user?.id,
             tenant_id: user?.user_metadata?.tenant_id

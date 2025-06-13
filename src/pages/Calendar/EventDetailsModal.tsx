@@ -118,12 +118,46 @@ export default function EventDetailsModal({
           )}
 
           {/* Client */}
-          {event.client_id && (
+          {(event.client_id || event.company_id) && (
             <div className="flex items-start space-x-3">
               <Users className="h-5 w-5 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Cliente</p>
-                <p className="text-sm text-gray-600">Cliente associado</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {event.client_id ? 'Cliente' : 'Empresa'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {event.client?.name || event.company?.name || 'Contato associado'}
+                </p>
+                {(event.client?.email || event.company?.email) && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {event.client?.email || event.company?.email}
+                  </p>
+                )}
+                {(event.client?.phone || event.company?.phone) && (
+                  <p className="text-xs text-gray-500">
+                    {event.client?.phone || event.company?.phone}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Deal */}
+          {event.deal_id && event.deal && (
+            <div className="flex items-start space-x-3">
+              <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Negócio</p>
+                <p className="text-sm text-gray-600">{event.deal.title}</p>
+                <div className="flex items-center space-x-2 mt-1">
+                  <span className="text-xs text-gray-500">
+                    Valor: {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }).format(event.deal.value || 0)}
+                  </span>
+                  <span className="text-xs text-gray-500">• {event.deal.stage}</span>
+                </div>
               </div>
             </div>
           )}

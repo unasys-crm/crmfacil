@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import DatePicker from 'react-datepicker'
 import Select from 'react-select'
-import { X, Calendar, Clock, Users, MapPin, FileText } from 'lucide-react'
+import { X, Calendar, Clock, Users, MapPin, FileText, Building2, User, Phone, Mail } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import 'react-datepicker/dist/react-datepicker.css'
 
@@ -14,6 +14,7 @@ const eventSchema = z.object({
   type: z.string().min(1, 'Tipo é obrigatório'),
   allDay: z.boolean(),
   client_id: z.string().optional(),
+  company_id: z.string().optional(),
   deal_id: z.string().optional(),
   location: z.string().optional(),
   attendees: z.array(z.string()).optional()
@@ -32,8 +33,10 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
   const [startDate, setStartDate] = useState(event?.start || new Date())
   const [endDate, setEndDate] = useState(event?.end || new Date(Date.now() + 60 * 60 * 1000))
   const [clients, setClients] = useState<any[]>([])
+  const [companies, setCompanies] = useState<any[]>([])
   const [deals, setDeals] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [contactType, setContactType] = useState<'client' | 'company'>('client')
 
   const {
     register,
@@ -49,6 +52,7 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
       type: event?.type || 'meeting',
       allDay: event?.allDay || false,
       client_id: event?.client_id || undefined,
+      company_id: event?.company_id || undefined,
       deal_id: event?.deal_id || undefined,
       location: event?.location || '',
       attendees: event?.attendees || []
@@ -57,25 +61,43 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
 
   const watchAllDay = watch('allDay')
   const watchClientId = watch('client_id')
+  const watchCompanyId = watch('company_id')
 
   // Load clients and deals
   useEffect(() => {
     loadClients()
+    loadCompanies()
     loadDeals()
   }, [])
 
   // Load deals when client changes
   useEffect(() => {
-    if (watchClientId) {
-      loadDeals(watchClientId)
+    if (watchClientId || watchCompanyId) {
+      loadDeals(watchClientId, watchCompanyId)
     }
-  }, [watchClientId])
+  }, [watchClientId, watchCompanyId])
+
+  // Set initial contact type based on existing event
+  useEffect(() => {
+    if (event?.client_id) {
+      setContactType('client')
+    } else if (event?.company_id) {
+      setContactType('company')
+    }
+  }, [event])
 
   const loadClients = async () => {
     try {
       const { data, error } = await supabase
         .from('clients')
-        .select('id, name, email')
+        .select(`
+          id, 
+          name, 
+          email, 
+          phone, 
+          cpf,
+          companies(name)
+        `)
         .order('name')
 
       if (error) throw error
@@ -85,15 +107,47 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
     }
   }
 
-  const loadDeals = async (clientId?: string) => {
+  const loadCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select(`
+          id, 
+          name, 
+          email, 
+          phone, 
+          cnpj,
+          segment,
+          city,
+          state
+        `)
+        .order('name')
+
+      if (error) throw error
+      setCompanies(data || [])
+    } catch (error) {
+      console.error('Error loading companies:', error)
+    }
+  }
+
+  const loadDeals = async (clientId?: string, companyId?: string) => {
     try {
       let query = supabase
         .from('deals')
-        .select('id, title, value, stage')
+        .select(`
+          id, 
+          title, 
+          value, 
+          stage,
+          clients(name),
+          companies(name)
+        `)
         .order('title')
 
       if (clientId) {
         query = query.eq('client_id', clientId)
+      } else if (companyId) {
+        query = query.eq('company_id', companyId)
       }
 
       const { data, error } = await query
@@ -103,6 +157,17 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
     } catch (error) {
       console.error('Error loading deals:', error)
     }
+  }
+
+  const handleContactTypeChange = (type: 'client' | 'company') => {
+    setContactType(type)
+    // Clear the other field when switching
+    if (type === 'client') {
+      setValue('company_id', undefined)
+    } else {
+      setValue('client_id', undefined)
+    }
+    setValue('deal_id', undefined) // Clear deals when switching contact type
   }
 
   const onSubmit = async (data: EventFormData) => {
@@ -126,13 +191,127 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
 
   const clientOptions = clients.map(client => ({
     value: client.id,
-    label: client.name
+    label: client.name,
+    email: client.email,
+    phone: client.phone,
+    cpf: client.cpf,
+    company: client.companies?.name
+  }))
+
+  const companyOptions = companies.map(company => ({
+    value: company.id,
+    label: company.name,
+    email: company.email,
+    phone: company.phone,
+    cnpj: company.cnpj,
+    segment: company.segment,
+    location: company.city && company.state ? `${company.city}, ${company.state}` : ''
   }))
 
   const dealOptions = deals.map(deal => ({
     value: deal.id,
-    label: `${deal.title} - ${deal.stage}`
+    label: `${deal.title} - ${deal.stage}`,
+    value_formatted: new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(deal.value || 0),
+    client: deal.clients?.name,
+    company: deal.companies?.name
   }))
+
+  // Custom option component for clients
+  const ClientOption = ({ data, ...props }: any) => (
+    <div {...props} className="flex items-center p-2 hover:bg-gray-50 cursor-pointer">
+      <div className="flex-shrink-0 mr-3">
+        <User className="h-8 w-8 text-gray-400 bg-gray-100 rounded-full p-1" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center space-x-2">
+          <p className="text-sm font-medium text-gray-900 truncate">{data.label}</p>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            PF
+          </span>
+        </div>
+        <div className="flex items-center space-x-4 mt-1">
+          {data.email && (
+            <div className="flex items-center text-xs text-gray-500">
+              <Mail className="h-3 w-3 mr-1" />
+              {data.email}
+            </div>
+          )}
+          {data.phone && (
+            <div className="flex items-center text-xs text-gray-500">
+              <Phone className="h-3 w-3 mr-1" />
+              {data.phone}
+            </div>
+          )}
+        </div>
+        {data.company && (
+          <p className="text-xs text-gray-500 mt-1">
+            Empresa: {data.company}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+
+  // Custom option component for companies
+  const CompanyOption = ({ data, ...props }: any) => (
+    <div {...props} className="flex items-center p-2 hover:bg-gray-50 cursor-pointer">
+      <div className="flex-shrink-0 mr-3">
+        <Building2 className="h-8 w-8 text-gray-400 bg-gray-100 rounded-full p-1" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center space-x-2">
+          <p className="text-sm font-medium text-gray-900 truncate">{data.label}</p>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            PJ
+          </span>
+        </div>
+        <div className="flex items-center space-x-4 mt-1">
+          {data.email && (
+            <div className="flex items-center text-xs text-gray-500">
+              <Mail className="h-3 w-3 mr-1" />
+              {data.email}
+            </div>
+          )}
+          {data.phone && (
+            <div className="flex items-center text-xs text-gray-500">
+              <Phone className="h-3 w-3 mr-1" />
+              {data.phone}
+            </div>
+          )}
+        </div>
+        {data.segment && (
+          <p className="text-xs text-gray-500 mt-1">
+            Segmento: {data.segment}
+          </p>
+        )}
+        {data.location && (
+          <p className="text-xs text-gray-500">
+            {data.location}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+
+  // Custom option component for deals
+  const DealOption = ({ data, ...props }: any) => (
+    <div {...props} className="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 truncate">{data.label}</p>
+        <div className="flex items-center space-x-2 mt-1">
+          <span className="text-xs text-gray-500">Valor: {data.value_formatted}</span>
+          {(data.client || data.company) && (
+            <span className="text-xs text-gray-500">
+              • {data.client || data.company}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -226,25 +405,68 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
             </div>
           </div>
 
-          {/* Client */}
+          {/* Contact Type Selection */}
           <div>
             <label className="form-label">
               <Users className="h-4 w-4 inline mr-2" />
-              Cliente
+              Tipo de Contato
             </label>
-            <Select
-              options={clientOptions}
-              value={clientOptions.find(option => option.value === watchClientId) || null}
-              onChange={(option) => setValue('client_id', option?.value || undefined)}
-              placeholder="Selecione um cliente"
-              isClearable
-              className="react-select-container"
-              classNamePrefix="react-select"
-            />
+            <div className="flex space-x-4 mb-3">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={contactType === 'client'}
+                  onChange={() => handleContactTypeChange('client')}
+                  className="mr-2 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700">Cliente (Pessoa Física)</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={contactType === 'company'}
+                  onChange={() => handleContactTypeChange('company')}
+                  className="mr-2 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700">Empresa (Pessoa Jurídica)</span>
+              </label>
+            </div>
+
+            {contactType === 'client' ? (
+              <Select
+                options={clientOptions}
+                value={clientOptions.find(option => option.value === watchClientId) || null}
+                onChange={(option) => setValue('client_id', option?.value || undefined)}
+                placeholder="Selecione um cliente"
+                isClearable
+                className="react-select-container"
+                classNamePrefix="react-select"
+                components={{
+                  Option: ClientOption
+                }}
+                isSearchable
+                noOptionsMessage={() => "Nenhum cliente encontrado"}
+              />
+            ) : (
+              <Select
+                options={companyOptions}
+                value={companyOptions.find(option => option.value === watchCompanyId) || null}
+                onChange={(option) => setValue('company_id', option?.value || undefined)}
+                placeholder="Selecione uma empresa"
+                isClearable
+                className="react-select-container"
+                classNamePrefix="react-select"
+                components={{
+                  Option: CompanyOption
+                }}
+                isSearchable
+                noOptionsMessage={() => "Nenhuma empresa encontrada"}
+              />
+            )}
           </div>
 
           {/* Deal */}
-          {watchClientId && (
+          {(watchClientId || watchCompanyId) && deals.length > 0 && (
             <div>
               <label className="form-label">Negócio</label>
               <Select
@@ -255,6 +477,11 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
                 isClearable
                 className="react-select-container"
                 classNamePrefix="react-select"
+                components={{
+                  Option: DealOption
+                }}
+                isSearchable
+                noOptionsMessage={() => "Nenhum negócio encontrado"}
               />
             </div>
           )}
