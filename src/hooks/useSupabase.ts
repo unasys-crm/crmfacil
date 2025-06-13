@@ -24,76 +24,84 @@ export function useSupabase() {
         ...query,
         select: (...args: any[]) => {
           const result = originalSelect(...args)
-          return {
-            ...result,
-            then: (onResolve: any, onReject?: any) => {
-              return result.then(
-                (data: any) => onResolve(data),
-                (error: any) => {
-                  if (error?.message?.includes('Failed to fetch')) {
-                    console.warn(`⚠️ Network error accessing table '${table}'. Using fallback data.`)
-                    // Return empty result instead of throwing
-                    return onResolve({ data: [], error: null, count: 0 })
-                  }
-                  return onReject ? onReject(error) : Promise.reject(error)
+          
+          // Override the then method directly on the result object to preserve chaining
+          const originalThen = result.then.bind(result)
+          result.then = (onResolve: any, onReject?: any) => {
+            return originalThen(
+              (data: any) => onResolve(data),
+              (error: any) => {
+                if (error?.message?.includes('Failed to fetch')) {
+                  console.warn(`⚠️ Network error accessing table '${table}'. Using fallback data.`)
+                  // Return empty result instead of throwing
+                  return onResolve({ data: [], error: null, count: 0 })
                 }
-              )
-            }
+                return onReject ? onReject(error) : Promise.reject(error)
+              }
+            )
           }
+          
+          return result
         },
         insert: (...args: any[]) => {
           const result = originalInsert(...args)
-          return {
-            ...result,
-            then: (onResolve: any, onReject?: any) => {
-              return result.then(
-                (data: any) => onResolve(data),
-                (error: any) => {
-                  if (error?.message?.includes('Failed to fetch')) {
-                    console.warn(`⚠️ Network error inserting into table '${table}'. Operation failed.`)
-                    return onReject ? onReject(error) : Promise.reject(error)
-                  }
+          
+          // Override the then method directly on the result object to preserve chaining
+          const originalThen = result.then.bind(result)
+          result.then = (onResolve: any, onReject?: any) => {
+            return originalThen(
+              (data: any) => onResolve(data),
+              (error: any) => {
+                if (error?.message?.includes('Failed to fetch')) {
+                  console.warn(`⚠️ Network error inserting into table '${table}'. Operation failed.`)
                   return onReject ? onReject(error) : Promise.reject(error)
                 }
-              )
-            }
+                return onReject ? onReject(error) : Promise.reject(error)
+              }
+            )
           }
+          
+          return result
         },
         update: (...args: any[]) => {
           const result = originalUpdate(...args)
-          return {
-            ...result,
-            then: (onResolve: any, onReject?: any) => {
-              return result.then(
-                (data: any) => onResolve(data),
-                (error: any) => {
-                  if (error?.message?.includes('Failed to fetch')) {
-                    console.warn(`⚠️ Network error updating table '${table}'. Operation failed.`)
-                    return onReject ? onReject(error) : Promise.reject(error)
-                  }
+          
+          // Override the then method directly on the result object to preserve chaining
+          const originalThen = result.then.bind(result)
+          result.then = (onResolve: any, onReject?: any) => {
+            return originalThen(
+              (data: any) => onResolve(data),
+              (error: any) => {
+                if (error?.message?.includes('Failed to fetch')) {
+                  console.warn(`⚠️ Network error updating table '${table}'. Operation failed.`)
                   return onReject ? onReject(error) : Promise.reject(error)
                 }
-              )
-            }
+                return onReject ? onReject(error) : Promise.reject(error)
+              }
+            )
           }
+          
+          return result
         },
         delete: (...args: any[]) => {
           const result = originalDelete(...args)
-          return {
-            ...result,
-            then: (onResolve: any, onReject?: any) => {
-              return result.then(
-                (data: any) => onResolve(data),
-                (error: any) => {
-                  if (error?.message?.includes('Failed to fetch')) {
-                    console.warn(`⚠️ Network error deleting from table '${table}'. Operation failed.`)
-                    return onReject ? onReject(error) : Promise.reject(error)
-                  }
+          
+          // Override the then method directly on the result object to preserve chaining
+          const originalThen = result.then.bind(result)
+          result.then = (onResolve: any, onReject?: any) => {
+            return originalThen(
+              (data: any) => onResolve(data),
+              (error: any) => {
+                if (error?.message?.includes('Failed to fetch')) {
+                  console.warn(`⚠️ Network error deleting from table '${table}'. Operation failed.`)
                   return onReject ? onReject(error) : Promise.reject(error)
                 }
-              )
-            }
+                return onReject ? onReject(error) : Promise.reject(error)
+              }
+            )
           }
+          
+          return result
         }
       }
     }
