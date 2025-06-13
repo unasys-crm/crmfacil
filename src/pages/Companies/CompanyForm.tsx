@@ -27,7 +27,13 @@ const companySchema = z.object({
   responsible_ids: z.array(z.string()).optional(),
   observations: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  associated_clients: z.array(z.any()).optional(),
+  associated_clients: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    client_type: z.enum(['person', 'company']),
+    role: z.string().optional(),
+    is_primary: z.boolean().optional()
+  })).optional(),
 })
 
 type CompanyFormData = z.infer<typeof companySchema>
@@ -781,89 +787,3 @@ export default function CompanyForm() {
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Fields */}
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Campos Personalizados
-          </h3>
-
-          {/* Custom Field Manager */}
-          <CustomFieldManager
-            fields={customFieldDefinitions}
-            onFieldsChange={setCustomFieldDefinitions}
-            isOpen={showCustomFieldManager}
-            onToggle={() => setShowCustomFieldManager(!showCustomFieldManager)}
-          />
-
-          {/* Custom Fields Renderer */}
-          {!showCustomFieldManager && (
-            <div className="space-y-4 mt-4">
-              {customFieldDefinitions.map((field) => (
-                <div key={field.id}>
-                  <CustomFieldRenderer
-                    field={field}
-                    value={customFieldValues[field.id]}
-                    onChange={(value) => handleCustomFieldChange(field.id, value)}
-                    error={customFieldErrors[field.id]}
-                  />
-                </div>
-              ))}
-              {customFieldDefinitions.length === 0 && (
-                <p className="text-sm text-gray-500 italic">
-                  Nenhum campo personalizado configurado. Use o gerenciador para adicionar campos.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Observations */}
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Observações
-          </h3>
-          <div>
-            <label className="form-label">Observações Gerais</label>
-            <textarea
-              {...register('observations')}
-              rows={4}
-              className="form-input"
-              placeholder="Informações adicionais sobre a empresa..."
-            />
-          </div>
-        </div>
-
-        {/* Company History - Only show when editing */}
-        {isEditing && (
-          <ClientHistory
-            companyId={id}
-            title="Histórico da Empresa"
-          />
-        )}
-
-        {/* Form Actions */}
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => navigate('/companies')}
-            className="btn-secondary"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="btn-primary"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? 'Salvando...' : 'Salvar Empresa'}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
