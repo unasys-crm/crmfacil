@@ -14,6 +14,7 @@ import { testSupabaseConnection, checkMigrations } from '../../utils/supabaseTes
 
 export default function Dashboard() {
   const [connectionTested, setConnectionTested] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState<'testing' | 'success' | 'failed' | 'idle'>('idle')
 
   useEffect(() => {
     // Testar conexão com Supabase quando o dashboard carregar
@@ -22,6 +23,8 @@ export default function Dashboard() {
       if (connectionTested) return // Evitar múltiplas execuções
       
       try {
+        setConnectionStatus('testing')
+        
         console.log('🚀 Iniciando testes de conectividade...')
         
         // Aguardar um pouco para garantir que tudo está carregado
@@ -32,14 +35,17 @@ export default function Dashboard() {
         
         if (connectionResult.success) {
           console.log('✅ Ambiente Supabase configurado corretamente!')
+          setConnectionStatus('success')
         } else {
           console.error('❌ Problemas na configuração do Supabase:', connectionResult.error)
           console.log('💡 O sistema pode ainda funcionar parcialmente. Use o botão de teste na tela de login para diagnósticos detalhados.')
+          setConnectionStatus('failed')
         }
         
         setConnectionTested(true)
       } catch (error) {
         console.error('❌ Erro durante os testes de conectividade:', error)
+        setConnectionStatus('failed')
         setConnectionTested(true)
       }
     }
@@ -85,6 +91,26 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Connection Status Banner */}
+      {connectionStatus === 'failed' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-800">
+                <strong>Aviso de Conectividade:</strong> Não foi possível conectar com o banco de dados. 
+                Alguns recursos podem não funcionar corretamente. 
+                <a href="/login" className="underline ml-1">Teste a conexão aqui</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">Visão geral do seu CRM</p>

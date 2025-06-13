@@ -93,8 +93,8 @@ export default function Calendar() {
   const loadEvents = async () => {
     if (!user) return
 
+    setLoading(true)
     try {
-      setLoading(true)
       const { data, error } = await supabase
         .from('events')
         .select(`
@@ -105,7 +105,14 @@ export default function Calendar() {
         `)
         .order('start_date', { ascending: true })
 
-      if (error) throw error
+      if (error) {
+        if (error.message?.includes('Failed to fetch')) {
+          console.warn('⚠️ Network error loading events. Using empty event list.')
+          setEvents([])
+          return
+        }
+        throw error
+      }
 
       const formattedEvents = data?.map(event => ({
         id: event.id,
@@ -131,7 +138,12 @@ export default function Calendar() {
 
       setEvents(formattedEvents)
     } catch (error) {
-      console.error('Error loading events:', error)
+      if (error instanceof Error && error.message?.includes('Failed to fetch')) {
+        console.warn('⚠️ Cannot connect to database. Events will not be loaded.')
+      } else {
+        console.error('Error loading events:', error)
+      }
+      setEvents([]) // Set empty events array as fallback
     } finally {
       setLoading(false)
     }
@@ -187,6 +199,12 @@ export default function Calendar() {
   // Handle event creation/update
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     try {
+      // Check network connectivity first
+      if (!navigator.onLine) {
+        alert('Sem conexão com a internet. Verifique sua conectividade.')
+        return
+      }
+
       // Check if user is authenticated
       if (!user?.id) {
         throw new Error('Usuário não autenticado')
@@ -270,13 +288,24 @@ export default function Calendar() {
       setEditingEvent(null)
     } catch (error) {
       console.error('Error saving event:', error)
-      alert('Erro ao salvar evento: ' + (error instanceof Error ? error.message : 'Erro desconhecido'))
+      
+      if (error instanceof Error && error.message?.includes('Failed to fetch')) {
+        alert('Erro de conectividade. Verifique sua conexão com a internet e tente novamente.')
+      } else {
+        alert('Erro ao salvar evento: ' + (error instanceof Error ? error.message : 'Erro desconhecido'))
+      }
     }
   }
 
   // Handle event deletion
   const handleDeleteEvent = async (eventId: string) => {
     try {
+      // Check network connectivity first
+      if (!navigator.onLine) {
+        alert('Sem conexão com a internet. Verifique sua conectividade.')
+        return
+      }
+
       const { error } = await supabase
         .from('events')
         .delete()
@@ -289,6 +318,10 @@ export default function Calendar() {
       setSelectedEvent(null)
     } catch (error) {
       console.error('Error deleting event:', error)
+      
+      if (error instanceof Error && error.message?.includes('Failed to fetch')) {
+        alert('Erro de conectividade. Verifique sua conexão com a internet e tente novamente.')
+      }
     }
   }
 

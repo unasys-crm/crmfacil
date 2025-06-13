@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 async function checkSupabaseUrl(url: string) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // Reduced to 5 second timeout
 
     const response = await fetch(`${url}/rest/v1/`, {
       method: 'HEAD',
@@ -75,7 +75,7 @@ export async function testSupabaseConnection() {
     
     const authPromise = supabase.auth.getSession()
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Authentication timeout')), 10000)
+      setTimeout(() => reject(new Error('Authentication timeout')), 6000) // Reduced timeout
     })
 
     const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any
@@ -101,7 +101,7 @@ export async function testSupabaseConnection() {
         .limit(1)
 
       const dbTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database timeout')), 8000)
+        setTimeout(() => reject(new Error('Database timeout')), 5000) // Reduced timeout
       })
 
       const { error: dbError } = await Promise.race([dbPromise, dbTimeoutPromise]) as any
@@ -172,7 +172,7 @@ export async function checkMigrations() {
           .limit(1)
 
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Table check timeout')), 5000)
+          setTimeout(() => reject(new Error('Table check timeout')), 3000) // Further reduced timeout
         })
 
         const { error: dbError } = await Promise.race([tablePromise, timeoutPromise]) as any
