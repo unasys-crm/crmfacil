@@ -104,6 +104,7 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
 
   const loadClientsAndCompanies = async () => {
     try {
+      setLoading(true)
       // Load clients
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
@@ -142,6 +143,11 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
       setCompanies(companiesData || [])
     } catch (error) {
       console.error('Error loading clients and companies:', error)
+      // Set empty arrays on error to prevent infinite loading
+      setClients([])
+      setCompanies([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -453,10 +459,18 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="form-input pl-10"
                   placeholder="Pesquisar cliente ou empresa por nome, email, telefone..."
+                  disabled={loading}
                 />
 
+                {/* Loading indicator */}
+                {loading && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                  </div>
+                )}
+
                 {/* Search Results */}
-                {searchTerm.trim() && filteredContacts.length > 0 && (
+                {searchTerm.trim() && !loading && filteredContacts.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
                     {filteredContacts.map((contact) => (
                       <div
@@ -517,10 +531,17 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
                 )}
 
                 {/* No results message */}
-                {searchTerm.trim() && filteredContacts.length === 0 && (
+                {searchTerm.trim() && !loading && filteredContacts.length === 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-4 text-center text-gray-500">
                     <p className="text-sm">Nenhum cliente ou empresa encontrado</p>
                     <p className="text-xs mt-1">Tente pesquisar por nome, email ou telefone</p>
+                  </div>
+                )}
+
+                {/* Loading message */}
+                {searchTerm.trim() && loading && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-4 text-center text-gray-500">
+                    <p className="text-sm">Buscando...</p>
                   </div>
                 )}
               </div>
