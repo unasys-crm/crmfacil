@@ -709,13 +709,16 @@ export default function CalendarCards() {
         {/* Drag Overlay */}
         <DragOverlay>
           {draggedEvent ? (
+            (() => {
+              const DragIcon = eventTypes[draggedEvent.type].icon;
+              return (
             <div className="bg-white rounded-lg shadow-lg border-2 border-primary-300 p-3 transform rotate-3 scale-105">
               <div className="flex items-center space-x-2 mb-2">
                 <div 
                   className="p-1 rounded"
                   style={{ backgroundColor: `${eventTypes[draggedEvent.type].color}20` }}
                 >
-                  <eventTypes[draggedEvent.type].icon 
+                  <DragIcon 
                     className="h-3 w-3"
                     style={{ color: eventTypes[draggedEvent.type].color }}
                   />
@@ -736,6 +739,8 @@ export default function CalendarCards() {
                 </div>
               )}
             </div>
+              );
+            })()
           ) : null}
         </DragOverlay>
       </DndContext>
