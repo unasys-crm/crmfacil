@@ -92,3 +92,53 @@ body {
 .rbc-event {
   @apply bg-primary-500 text-white rounded;
 }
+
+/* React DatePicker Styles */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  @apply form-input;
+}
+
+.react-datepicker {
+  @apply border border-gray-200 rounded-lg shadow-lg;
+  font-family: inherit;
+}
+
+.react-datepicker__header {
+  @apply bg-gray-50 border-b border-gray-200;
+}
+
+.react-datepicker__current-month {
+  @apply text-gray-900 font-semibold;
+}
+
+.react-datepicker__day-name {
+  @apply text-gray-600 font-medium;
+}
+
+.react-datepicker__day {
+  @apply text-gray-700 hover:bg-primary-100;
+}
+
+.react-datepicker__day--selected {
+  @apply bg-primary-500 text-white hover:bg-primary-600;
+}
+
+.react-datepicker__day--today {
+  @apply bg-primary-100 text-primary-800;
+}
+
+.react-datepicker__time-container {
+  @apply border-l border-gray-200;
+}
+
+.react-datepicker__time-list-item {
+  @apply hover:bg-primary-100;
+}
+
+.react-datepicker__time-list-item--selected {
+  @apply bg-primary-500 text-white;
+}

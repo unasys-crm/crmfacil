@@ -31,12 +31,16 @@
     "html2canvas": "^1.4.1",
     "recharts": "^2.8.0",
     "react-big-calendar": "^1.8.5",
-    "moment": "^2.29.4"
+    "moment": "^2.29.4",
+    "react-datepicker": "^4.25.0",
+    "react-modal": "^3.16.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@types/react-input-mask": "^3.0.5",
+    "@types/react-datepicker": "^4.19.4",
+    "@types/react-modal": "^3.16.3",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
