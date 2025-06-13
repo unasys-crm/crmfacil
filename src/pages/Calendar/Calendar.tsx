@@ -182,21 +182,13 @@ export default function Calendar() {
   // Handle event creation/update
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     try {
-      // Get tenant_id from current user
-      if (!user?.id) {
-        throw new Error('Usuário não autenticado')
+      // Check if user is authenticated and company is selected
+      if (!user?.id || !currentCompany?.id) {
+        throw new Error('Usuário não autenticado ou empresa não selecionada')
       }
       
-      // Get user's tenant_id from the users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single()
-
-      if (userError || !userData?.tenant_id) {
-        throw new Error('Não foi possível obter informações do tenant do usuário')
-      }
+      // Use current company as tenant_id
+      const tenant_id = currentCompany.id
 
       if (editingEvent?.id) {
         // Update existing event
@@ -232,7 +224,7 @@ export default function Calendar() {
             company_id: eventData.company_id,
             deal_id: eventData.deal_id,
             responsible_id: user?.id,
-            tenant_id: userData.tenant_id
+            tenant_id: tenant_id
           })
 
         if (error) throw error
