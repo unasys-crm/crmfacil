@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
-import { useSortable, useDroppable } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { useDroppable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { 
   Calendar as CalendarIcon, 
