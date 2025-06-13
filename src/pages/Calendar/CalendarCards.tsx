@@ -456,11 +456,11 @@ export default function CalendarCards() {
         .from('users')
         .select('tenant_id')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       let tenantId = userData?.tenant_id
 
-      if (userError && userError.code === 'PGRST116') {
+      if (!userData) {
         const { error: insertError } = await supabase
           .from('users')
           .insert({
@@ -476,8 +476,10 @@ export default function CalendarCards() {
         }
         
         tenantId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
-      } else if (userError || !tenantId) {
-        throw new Error('Não foi possível obter informações do usuário')
+      } else if (userError) {
+        throw new Error('Não foi possível obter informações do usuário: ' + userError.message)
+      } else if (!tenantId) {
+        throw new Error('Tenant ID não encontrado para o usuário')
       }
 
       if (editingEvent?.id) {
