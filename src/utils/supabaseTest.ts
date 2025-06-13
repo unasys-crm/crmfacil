@@ -1,19 +1,31 @@
 // Utilitário para testar a conexão com Supabase
 import { supabase } from '../lib/supabase'
-import { useSupabase } from '../hooks/useSupabase'
 
 // Função para verificar se a URL do Supabase está acessível
 async function checkSupabaseUrl(url: string) {
   try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+
     const response = await fetch(`${url}/rest/v1/`, {
       method: 'HEAD',
       headers: {
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`
-      }
+      },
+      signal: controller.signal
     })
+
+    clearTimeout(timeoutId)
     return response.ok
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        console.warn('⚠️ Connection timeout - the request took too long')
+      } else if (error.message.includes('Failed to fetch')) {
+        console.warn('⚠️ Network error - unable to reach Supabase')
+      }
+    }
     return false
   }
 }
@@ -45,14 +57,28 @@ export async function testSupabaseConnection() {
     const isUrlAccessible = await checkSupabaseUrl(supabaseUrl)
     
     if (!isUrlAccessible) {
-      throw new Error(`Não foi possível conectar com ${supabaseUrl}. Verifique se a URL está correta e se você tem acesso à internet.`)
+      console.warn(`⚠️ Não foi possível conectar com ${supabaseUrl}`)
+      console.warn('💡 Possíveis causas:')
+      console.warn('   • Projeto Supabase pausado ou inativo')
+      console.warn('   • Firewall ou proxy bloqueando a conexão')
+      console.warn('   • URL incorreta ou projeto deletado')
+      console.warn('   • Problemas de conectividade de rede')
+      console.warn('💡 Verifique o status do projeto em https://supabase.com')
+      
+      // Don't throw error, just warn - the app might still work for some operations
+    } else {
+      console.log('✅ URL do Supabase está acessível')
     }
     
-    console.log('✅ URL do Supabase está acessível')
-    
-    // Testar conexão básica
+    // Testar conexão básica com timeout
     console.log('🔐 Testando autenticação...')
-    const { data, error } = await supabase.auth.getSession()
+    
+    const authPromise = supabase.auth.getSession()
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Authentication timeout')), 10000)
+    })
+
+    const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any
     
     if (error) {
       console.error('❌ Erro ao conectar com Supabase:', error.message)
@@ -66,13 +92,19 @@ export async function testSupabaseConnection() {
     console.log('✅ Conexão com Supabase estabelecida com sucesso!')
     console.log('📊 Sessão atual:', data.session ? 'Usuário logado' : 'Nenhum usuário logado')
     
-    // Testar acesso ao banco de dados
+    // Testar acesso ao banco de dados com timeout
     console.log('🗄️ Testando acesso ao banco de dados...')
     try {
-      const { error: dbError } = await supabase
+      const dbPromise = supabase
         .from('clients')
         .select('count')
         .limit(1)
+
+      const dbTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database timeout')), 8000)
+      })
+
+      const { error: dbError } = await Promise.race([dbPromise, dbTimeoutPromise]) as any
       
       if (dbError) {
         console.warn('⚠️ Aviso: Não foi possível acessar a tabela clients:', dbError.message)
@@ -82,7 +114,11 @@ export async function testSupabaseConnection() {
         console.log('✅ Acesso ao banco de dados funcionando')
       }
     } catch (dbError) {
-      console.warn('⚠️ Teste de banco de dados falhou:', dbError)
+      if (dbError instanceof Error && dbError.message === 'Database timeout') {
+        console.warn('⚠️ Timeout no teste de banco de dados - a resposta está demorada')
+      } else {
+        console.warn('⚠️ Teste de banco de dados falhou:', dbError)
+      }
     }
     
     return {
@@ -103,9 +139,12 @@ export async function testSupabaseConnection() {
                      '1. Verifique sua conexão com a internet\n' +
                      '2. Confirme se a URL do Supabase está correta\n' +
                      '3. Verifique se não há bloqueios de firewall/proxy\n' +
-                     '4. Tente acessar a URL diretamente no navegador'
+                     '4. Tente acessar a URL diretamente no navegador\n' +
+                     '5. Verifique se o projeto Supabase não está pausado'
       } else if (error.message.includes('Invalid API key')) {
         helpMessage = '\n💡 A chave da API (ANON_KEY) parece estar incorreta. Verifique no painel do Supabase.'
+      } else if (error.message.includes('timeout')) {
+        helpMessage = '\n💡 A conexão está demorando muito. Verifique sua conectividade de rede.'
       }
     }
     
@@ -127,10 +166,16 @@ export async function checkMigrations() {
     
     for (const table of tables) {
       try {
-        const { error: dbError } = await supabase
+        const tablePromise = supabase
           .from(table)
           .select('count')
           .limit(1)
+
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Table check timeout')), 5000)
+        })
+
+        const { error: dbError } = await Promise.race([tablePromise, timeoutPromise]) as any
         
         if (dbError) {
           if (dbError.message.includes('relation') && dbError.message.includes('does not exist')) {
@@ -142,13 +187,19 @@ export async function checkMigrations() {
           results.push({ table, status: 'ok', message: 'Tabela acessível' })
         }
       } catch (err) {
-        results.push({ table, status: 'error', message: 'Tabela não encontrada' })
+        if (err instanceof Error && err.message === 'Table check timeout') {
+          results.push({ table, status: 'timeout', message: 'Timeout ao verificar tabela' })
+        } else {
+          results.push({ table, status: 'error', message: 'Tabela não encontrada' })
+        }
       }
     }
     
     console.log('📊 Status das tabelas:')
     results.forEach(result => {
-      const icon = result.status === 'ok' ? '✅' : result.status === 'missing' ? '⚠️' : '❌'
+      const icon = result.status === 'ok' ? '✅' : 
+                   result.status === 'missing' ? '⚠️' : 
+                   result.status === 'timeout' ? '⏱️' : '❌'
       console.log(`${icon} ${result.table}: ${result.message}`)
     })
     

@@ -166,8 +166,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       
       setSupabaseClient(client)
       
-      // Test the connection
-      testConnection(client, company.name)
+      // Test the connection with a delay to ensure client is ready
+      setTimeout(() => {
+        testConnection(client, company.name)
+      }, 1000)
       
     } catch (error) {
       console.error('Error creating Supabase client:', error)
@@ -182,18 +184,44 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
   const testConnection = async (client: SupabaseClient, companyName: string) => {
     try {
-      const { data, error } = await client
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Connection timeout')), 10000)
+      })
+
+      const connectionPromise = client
         .from('clients')
         .select('count')
         .limit(1)
+
+      const { data, error } = await Promise.race([connectionPromise, timeoutPromise]) as any
       
       if (error) {
-        console.warn(`⚠️ Database connection test failed for ${companyName}:`, error.message)
+        if (error.message.includes('Failed to fetch')) {
+          console.warn(`⚠️ Network connectivity issue for ${companyName}. This might be due to:`)
+          console.warn('   • Firewall or proxy blocking the connection')
+          console.warn('   • Supabase project is paused or unavailable')
+          console.warn('   • Network connectivity issues')
+          console.warn('   • Invalid Supabase URL or credentials')
+        } else {
+          console.warn(`⚠️ Database connection test failed for ${companyName}:`, error.message)
+        }
       } else {
         console.log(`✅ Successfully connected to ${companyName} database`)
       }
     } catch (error) {
-      console.warn(`⚠️ Database connection test failed for ${companyName}:`, error)
+      if (error instanceof Error) {
+        if (error.message === 'Connection timeout') {
+          console.warn(`⚠️ Connection timeout for ${companyName}. The database might be slow to respond.`)
+        } else if (error.message.includes('Failed to fetch')) {
+          console.warn(`⚠️ Network error for ${companyName}:`, error.message)
+          console.warn('💡 Try the connection test button on the login page for detailed diagnostics')
+        } else {
+          console.warn(`⚠️ Unexpected error testing connection for ${companyName}:`, error.message)
+        }
+      } else {
+        console.warn(`⚠️ Unknown error testing connection for ${companyName}:`, error)
+      }
     }
   }
 

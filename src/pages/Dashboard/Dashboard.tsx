@@ -5,7 +5,7 @@ import {
   DollarSign,
   Clock
 } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import StatsCard from './StatsCard'
 import RecentActivity from './RecentActivity'
 import SalesChart from './SalesChart'
@@ -13,23 +13,44 @@ import DealsOverview from './DealsOverview'
 import { testSupabaseConnection, checkMigrations } from '../../utils/supabaseTest'
 
 export default function Dashboard() {
+  const [connectionTested, setConnectionTested] = useState(false)
+
   useEffect(() => {
     // Testar conexão com Supabase quando o dashboard carregar
+    // Adicionar um delay para evitar problemas de timing
     const runTests = async () => {
-      console.log('🚀 Iniciando testes de conectividade...')
+      if (connectionTested) return // Evitar múltiplas execuções
       
-      const connectionResult = await testSupabaseConnection()
-      await checkMigrations()
-      
-      if (connectionResult.success) {
-        console.log('✅ Ambiente Supabase configurado corretamente!')
-      } else {
-        console.error('❌ Problemas na configuração do Supabase:', connectionResult.error)
+      try {
+        console.log('🚀 Iniciando testes de conectividade...')
+        
+        // Aguardar um pouco para garantir que tudo está carregado
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        const connectionResult = await testSupabaseConnection()
+        await checkMigrations()
+        
+        if (connectionResult.success) {
+          console.log('✅ Ambiente Supabase configurado corretamente!')
+        } else {
+          console.error('❌ Problemas na configuração do Supabase:', connectionResult.error)
+          console.log('💡 O sistema pode ainda funcionar parcialmente. Use o botão de teste na tela de login para diagnósticos detalhados.')
+        }
+        
+        setConnectionTested(true)
+      } catch (error) {
+        console.error('❌ Erro durante os testes de conectividade:', error)
+        setConnectionTested(true)
       }
     }
     
-    runTests()
-  }, [])
+    // Executar apenas uma vez
+    const timeoutId = setTimeout(runTests, 1000)
+    
+    return () => {
+      clearTimeout(timeoutId)
+    }
+  }, [connectionTested])
 
   const stats = [
     {
