@@ -187,7 +187,7 @@ export default function Calendar() {
         throw new Error('Nenhuma empresa selecionada')
       }
       
-      const tenant_id = currentCompany.tenant_id
+      const tenant_id = currentCompany.id
 
       if (editingEvent?.id) {
         // Update existing event
