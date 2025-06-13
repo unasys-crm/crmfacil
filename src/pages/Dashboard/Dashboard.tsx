@@ -19,7 +19,7 @@ export default function Dashboard() {
       console.log('🚀 Iniciando testes de conectividade...')
       
       const connectionResult = await testSupabaseConnection()
-      const migrationResults = await checkMigrations()
+      await checkMigrations()
       
       if (connectionResult.success) {
         console.log('✅ Ambiente Supabase configurado corretamente!')
