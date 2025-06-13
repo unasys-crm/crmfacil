@@ -119,7 +119,7 @@ export async function checkMigrations() {
     console.log('🔍 Verificando status das migrações...')
     
     // Tentar acessar algumas tabelas principais
-    const tables = ['clients', 'companies', 'deals', 'users']
+    const tables = ['clients', 'companies', 'deals', 'users', 'events']
     const results = []
     
     for (const table of tables) {

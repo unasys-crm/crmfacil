@@ -9,6 +9,7 @@ import Select from 'react-select'
 import CustomFieldManager, { CustomField } from '../../components/CustomFields/CustomFieldManager'
 import CustomFieldRenderer from '../../components/CustomFields/CustomFieldRenderer'
 import ClientSelector from '../../components/ClientSelector/ClientSelector'
+import ClientHistory from '../../components/ClientHistory/ClientHistory'
 
 const companySchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -835,6 +836,14 @@ export default function CompanyForm() {
             />
           </div>
         </div>
+
+        {/* Company History - Only show when editing */}
+        {isEditing && (
+          <ClientHistory
+            companyId={id}
+            title="Histórico da Empresa"
+          />
+        )}
 
         {/* Form Actions */}
         <div className="flex justify-end space-x-4">

@@ -180,6 +180,22 @@ export default function Calendar() {
   // Handle event creation/update
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     try {
+      let tenant_id = null
+      
+      // Get user's tenant_id
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', user?.id)
+        .single()
+      
+      if (userError) {
+        console.error('Error getting user tenant:', userError)
+        throw new Error('Erro ao obter informações do usuário')
+      }
+      
+      tenant_id = userData.tenant_id
+
       if (editingEvent?.id) {
         // Update existing event
         const { error } = await supabase
@@ -214,7 +230,7 @@ export default function Calendar() {
             company_id: eventData.company_id,
             deal_id: eventData.deal_id,
             responsible_id: user?.id,
-            tenant_id: user?.user_metadata?.tenant_id
+            tenant_id: tenant_id
           })
 
         if (error) throw error
@@ -225,6 +241,7 @@ export default function Calendar() {
       setEditingEvent(null)
     } catch (error) {
       console.error('Error saving event:', error)
+      alert('Erro ao salvar evento: ' + (error instanceof Error ? error.message : 'Erro desconhecido'))
     }
   }
 

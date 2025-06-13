@@ -96,7 +96,7 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
           email, 
           phone, 
           cpf,
-          companies(name)
+          companies(id, name)
         `)
         .order('name')
 
@@ -195,7 +195,8 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
     email: client.email,
     phone: client.phone,
     cpf: client.cpf,
-    company: client.companies?.name
+    company: client.companies?.name,
+    company_id: client.companies?.id
   }))
 
   const companyOptions = companies.map(company => ({
@@ -436,7 +437,13 @@ export default function EventModal({ event, onSave, onClose, eventTypes }: Event
               <Select
                 options={clientOptions}
                 value={clientOptions.find(option => option.value === watchClientId) || null}
-                onChange={(option) => setValue('client_id', option?.value || undefined)}
+                onChange={(option) => {
+                  setValue('client_id', option?.value || undefined)
+                  // Auto-select company if client has one
+                  if (option?.company_id) {
+                    setValue('company_id', option.company_id)
+                  }
+                }}
                 placeholder="Selecione um cliente"
                 isClearable
                 className="react-select-container"

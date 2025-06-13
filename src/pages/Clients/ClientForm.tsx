@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { Save, ArrowLeft, Search, Plus, X } from 'lucide-react'
 import InputMask from 'react-input-mask'
 import Select from 'react-select'
+import ClientHistory from '../../components/ClientHistory/ClientHistory'
 
 const clientSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -545,6 +546,14 @@ export default function ClientForm() {
             placeholder={`Observações sobre ${watchedClientType === 'company' ? 'a empresa' : 'o cliente'}...`}
           />
         </div>
+
+        {/* Client History - Only show when editing */}
+        {isEditing && (
+          <ClientHistory
+            clientId={id}
+            title="Histórico do Cliente"
+          />
+        )}
 
         {/* Actions */}
         <div className="flex justify-end space-x-4">
