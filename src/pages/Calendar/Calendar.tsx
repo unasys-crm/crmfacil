@@ -187,15 +187,35 @@ export default function Calendar() {
         throw new Error('Usuário não autenticado')
       }
       
-      // Get user's tenant_id from the users table
+      // Get user's tenant_id from the users table, create user record if it doesn't exist
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('tenant_id')
         .eq('id', user.id)
         .single()
 
-      if (userError || !userData?.tenant_id) {
-        throw new Error('Não foi possível obter informações do usuário')
+      let tenantId = userData?.tenant_id
+
+      // If user record doesn't exist in public.users table, create it
+      if (userError && userError.code === 'PGRST116') {
+        // Create user record with demo tenant ID (you may want to adjust this logic)
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email || '',
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+            role: 'user',
+            tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' // Demo tenant ID
+          })
+
+        if (insertError) {
+          throw new Error('Erro ao criar registro do usuário: ' + insertError.message)
+        }
+        
+        tenantId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+      } else if (userError || !tenantId) {
+        throw new Error('Não foi possível obter informações do usuário: ' + (userError?.message || 'Tenant ID não encontrado'))
       }
 
       if (editingEvent?.id) {
@@ -232,7 +252,7 @@ export default function Calendar() {
             company_id: eventData.company_id,
             deal_id: eventData.deal_id,
             responsible_id: user?.id,
-            tenant_id: userData.tenant_id
+            tenant_id: tenantId
           })
 
         if (error) throw error
