@@ -25,6 +25,7 @@ import EventDetailsModal from './EventDetailsModal'
 import CalendarFilters from './CalendarFilters'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { useCompany } from '../../contexts/CompanyContext'
 
 // Configure moment for Portuguese
 moment.locale('pt-br')
@@ -63,6 +64,7 @@ interface CalendarEvent {
 
 export default function Calendar() {
   const { user } = useAuth()
+  const { currentCompany } = useCompany()
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<View>(Views.MONTH)
@@ -180,25 +182,12 @@ export default function Calendar() {
   // Handle event creation/update
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     try {
-      let tenant_id: string | null = null
-      
-      // Get user's tenant_id
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('tenant_id')
-        .eq('id', user?.id)
-        .maybeSingle()
-      
-      if (userError) {
-        console.error('Error getting user tenant:', userError)
-        throw new Error('Erro ao obter informações do usuário')
+      // Get tenant_id from current company
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada')
       }
       
-      if (!userData || !userData.tenant_id) {
-        throw new Error('Configuração de tenant do usuário não encontrada')
-      }
-      
-      tenant_id = userData.tenant_id
+      const tenant_id = currentCompany.id
 
       if (editingEvent?.id) {
         // Update existing event
